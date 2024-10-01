@@ -194,16 +194,26 @@ def scrape_report(url,driver):
     )
     length = re.sub(r"\D+", "", length)
 
-    # Extract sector, companies, countries, products, and other info
     sector = soup.find("ol", class_="MuiBreadcrumbs-ol css-nhb8h9").find_all("li", class_="MuiBreadcrumbs-li")[1].text.strip() if soup.find("ol", class_="MuiBreadcrumbs-ol css-nhb8h9") else ""
     
     companies_list = []
     ten_div = soup.select_one("#tab_default_1 > div:nth-of-type(10)")
-    compa = ten_div.find("ul") if ten_div else None
-    if compa:
-        for li in compa.find_all("li"):
-            companies_list.append(f"◦ {li.text.strip()}")
+    companies_list = []
+    if ten_div:
+        ul_elements = ten_div.find_all("ul")
+    for ul in ul_elements:
+        preceding_p = ul.find_previous_sibling('p')
+        if preceding_p and 'top player' in preceding_p.get_text(strip=True).lower():
+            for li in ul.find_all("li"):
+                company = li.text.strip()
+                if company and company != '&nbsp;':
+                    companies_list.append(f"◦ {company}")
+        elif preceding_p and 'recent development' in preceding_p.get_text(strip=True).lower():
+            break 
+
     cell_companies = "\n".join(companies_list)
+
+
     
     # Segments
     seg = soup.find("td", class_="fw-bold", string="Segments covered")
