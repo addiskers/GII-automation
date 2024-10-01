@@ -34,7 +34,7 @@ This Flask application scrapes reports from a given list of URLs using Selenium,
 First, clone the repository:
 
 ```bash
-git clone https://github.com/yourusername/your-repo.git
+git clone https://github.com/addiskers/GII-automation.git
 cd your-repo
 
 
@@ -60,7 +60,7 @@ To deploy on Render, you'll need to ensure that Chrome and ChromeDriver are inst
 
 ### Important Selenium Path Issue on Render
 
-When deploying on **Render**, you'll run into an issue where **Selenium** cannot find the Chrome binary. This is because Render doesn't have Chrome installed by default, and Selenium needs to know the path to the Chrome binary in the Render environment.
+When deploying on **Render**, you'll run into an issue where **Selenium** cannot find. This is because Render doesn't have Chrome installed by default, and Selenium needs to know the path in the Render environment.
 
 To solve this:
 
@@ -72,11 +72,6 @@ To solve this:
    export PATH="${PATH}:/opt/render/project/.render/chrome/opt/google/chrome" && python app.py
    ```
 
-3. **Selenium Chrome Setup**: In the Python code, specify the correct binary location for Chrome:
-
-   ```python
-   options.binary_location = "/opt/render/project/.render/chrome/opt/google/chrome/usr/bin/google-chrome"
-   ```
 
 ### Render Build Command
 
