@@ -8,7 +8,10 @@ from bs4 import BeautifulSoup
 from openai import OpenAI
 from dotenv import load_dotenv
 import os,re
-from selenium.webdriver.edge.options import Options
+from selenium import webdriver
+from selenium.webdriver.chrome.service import Service
+from selenium.webdriver.chrome.options import Options
+from webdriver_manager.chrome import ChromeDriverManager
 from openpyxl import Workbook
 from time import sleep
 # Load  variables
@@ -25,8 +28,9 @@ def setup_selenium_driver():
     options.add_argument("--no-sandbox")
     options.add_argument("--disable-dev-shm-usage")
     
-    service = Service("/usr/local/bin/msedgedriver")
-    driver = webdriver.Edge(service=service, options=options)
+    service = Service(ChromeDriverManager().install())
+    driver = webdriver.Chrome(service=service, options=options)
+    
     return driver
 
 app = Flask(__name__)
@@ -140,10 +144,10 @@ def extract_report_details(soup):
         return description_content
 data=[]
 # Function to scrape the report
-def scrape_report(url):
+def scrape_report(url,driver):
    
     
-    driver = setup_selenium_driver()
+    driver = driver
     driver.get(url)
     WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.CLASS_NAME, "tabs-bar")))
     
@@ -170,7 +174,6 @@ def scrape_report(url):
     toc_content = "\n".join(lines)
     
    
-    # Extract the main report details
     summary = extract_report_details(soup)
     
     # Title
@@ -262,6 +265,7 @@ def index():
 # Route to handle form submission and generate Excel file
 @app.route('/generate', methods=['POST'])
 def generate_excel():
+    driver=setup_selenium_driver()
     urls = request.form.get('urls').split('\n')
     urls = [url.strip() for url in urls if url.strip()]  
 
@@ -278,7 +282,7 @@ def generate_excel():
     ws.append(headers)
 
     for url in urls:
-        scrape_report(url)
+        scrape_report(url,driver)
         
     for row in data:
         ws.append(row)
