@@ -25,7 +25,7 @@ def setup_selenium_driver():
     options.add_argument("--no-sandbox")
     options.add_argument("--disable-dev-shm-usage")
     
-    service = Service(r"C:\Users\adity\OneDrive\Desktop\SQ\deployment\msedgedriver.exe")
+    service = Service(r"/usr/local/bin/msedgedriver")
     driver = webdriver.Edge(service=service, options=options)
     return driver
 

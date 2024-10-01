@@ -1,0 +1,22 @@
+services:
+  - type: web
+    name: edge-selenium-flask-app
+    env: python
+    buildCommand: |
+      # Update package lists
+      sudo apt-get update
+
+      # Install Microsoft Edge browser
+      sudo apt-get install -y software-properties-common apt-transport-https wget
+      wget -q https://packages.microsoft.com/keys/microsoft.asc -O- | sudo apt-key add -
+      sudo add-apt-repository "deb [arch=amd64] https://packages.microsoft.com/repos/edge stable main"
+      sudo apt-get update
+      sudo apt-get install -y microsoft-edge-stable
+
+      # Install EdgeDriver
+      sudo wget https://msedgedriver.azureedge.net/112.0.1722.68/edgedriver_linux64.zip -O /tmp/msedgedriver.zip
+      sudo unzip /tmp/msedgedriver.zip -d /usr/local/bin/
+
+      # Install Python dependencies
+      pip install -r requirements.txt
+    startCommand: python app.py
