@@ -1,6 +1,4 @@
-from flask import Flask, render_template, request, send_file
-from selenium import webdriver
-from selenium.webdriver.edge.service import Service
+from flask import Flask, render_template, send_file,request
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
@@ -9,12 +7,8 @@ from openai import OpenAI
 from dotenv import load_dotenv
 import os,re
 from selenium import webdriver
-from selenium.webdriver.chrome.service import Service
-from selenium.webdriver.chrome.options import Options
-from webdriver_manager.chrome import ChromeDriverManager
 from openpyxl import Workbook
 from time import sleep
-# Load  variables
 
 load_dotenv()
 api_key = os.getenv("OPENAI_API_KEY")
@@ -143,10 +137,9 @@ def extract_report_details(soup):
         )  
         return description_content
 data=[]
-# Function to scrape the report
+
+# Function to scrape 
 def scrape_report(url,driver):
-   
-    
     driver = driver
     driver.get(url)
     WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.CLASS_NAME, "tabs-bar")))
@@ -263,16 +256,15 @@ def scrape_report(url,driver):
     price_sitelesense = "6200"
     price_enterprise = "7100"
     
-    # Append the data for this report
     data.append([title, product_code, url, "", length, "", price_single, price_sitelesense, price_enterprise, summary, toc_content, "", "", sector, cell_countries, cell_companies, products, data_2022, data_2023, data_2031, cagr_value, currency])
 
 
-# Route for the main page
+# main page
 @app.route('/')
 def index():
     return render_template('index.html')
 
-# Route to handle form submission and generate Excel file
+# generate Excel file
 @app.route('/generate', methods=['POST'])
 def generate_excel():
     driver=setup_selenium_driver()
@@ -292,15 +284,12 @@ def generate_excel():
     ws.append(headers)
 
     for url in urls:
-        scrape_report(url,driver)
-        
+        scrape_report(url,driver)   
     for row in data:
         ws.append(row)
 
     file_path = os.path.join(os.getcwd(), 'GII.xlsx')
-
     wb.save(file_path)
-
     return send_file(file_path, as_attachment=True)
 
 if __name__ == "__main__":
