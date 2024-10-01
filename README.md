@@ -35,7 +35,7 @@ First, clone the repository:
 
 ```bash
 git clone https://github.com/addiskers/GII-automation.git
-cd your-repo
+cd GII-automation
 
 
 Then install the required Python dependencies:
