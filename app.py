@@ -9,6 +9,7 @@ import os,re
 from selenium import webdriver
 from openpyxl import Workbook
 from time import sleep
+from openpyxl.styles import PatternFill, Font
 
 load_dotenv()
 api_key = os.getenv("OPENAI_API_KEY")
@@ -136,7 +137,6 @@ def extract_report_details(soup):
             ]
         )  
         return description_content
-data=[]
 
 # Function to scrape 
 def scrape_report(url,driver):
@@ -282,6 +282,12 @@ def generate_excel():
                "Agenda / Schedule", "Executive Summary", "Sector", "Countries Covered", 
                "Companies Mentioned", "Products Mentioned", "2022", "2023", "2031", "CAGR %", "Currency"]
     ws.append(headers)
+    yellow_fill = PatternFill(start_color="FFFF00", end_color="FFFF00", fill_type="solid")
+    bold_font = Font(bold=True)
+    for cell in ws[1]: 
+        cell.fill = yellow_fill
+        cell.font = bold_font
+    
 
     for url in urls:
         scrape_report(url,driver)   
