@@ -284,17 +284,32 @@ def index():
     return render_template('index.html')
 
 # generate Excel file
+red_fill = PatternFill(start_color="FF0000", end_color="FF0000", fill_type="solid")
+
+def apply_error_formatting(ws, row_idx):
+    """Applies red formatting to an entire row if an error is found."""
+    for cell in ws[row_idx]:
+        if cell.value == "Error":
+            for row_cell in ws[row_idx]:
+                row_cell.fill = red_fill  # Apply red background to all cells in the row
+
 @app.route('/generate', methods=['POST'])
 def generate_excel():
     driver = setup_selenium_driver()
     urls = request.form.get('urls').split('\n')
-    urls = [url.strip() for url in urls if url.strip()]
+    urls = [url.strip() for url in urls if url.strip()]  # Clean up URLs
 
     global data
-    data = []  
+    data = []  # Clear previous data
 
+    # Create a new Excel workbook
     wb = Workbook()
+
+    # Create the main worksheet for successful data
     ws = wb.active
+    ws.title = "Scraped Data"
+
+    # Define headers for the main sheet
     headers = ["Title", "Product Code", "URL", "Date", "Length", "Headline", 
                "Price: Single User\nFormat: PDF & Excel", "Price: Site License\nFormat: PDF & Excel", 
                "Price: Enterprise License\nFormat: PDF & Excel", "Description", "Table of Content", 
@@ -302,33 +317,49 @@ def generate_excel():
                "Companies Mentioned", "Products Mentioned", "2022", "2023", "2031", "CAGR %", "Currency"]
     ws.append(headers)
 
+    # Style the headers with yellow background and bold font
     yellow_fill = PatternFill(start_color="FFFF00", end_color="FFFF00", fill_type="solid")
     bold_font = Font(bold=True)
     for cell in ws[1]:
         cell.fill = yellow_fill
         cell.font = bold_font
 
-    failed_urls = []  
+    # Create a new worksheet for failed URLs
+    failed_ws = wb.create_sheet(title="Failed URLs")
+    failed_ws.append(["Failed URLs"])  # Header for the failed URLs sheet
 
+    failed_urls = []  # List to track failed URLs
+
+    # Scrape each URL and handle errors
     for url in urls:
         try:
-            scrape_report(url, driver) 
+            scrape_report(url, driver)  # Scrape data for each URL
         except Exception as e:
             print(f"Error processing URL {url}: {str(e)}")
-            failed_urls.append(url)  
+            failed_urls.append(url)  # Append to failed URLs if scraping fails
 
-    for row in data:
-        ws.append(row)
+    # Append scraped data to the main worksheet
+    for row_idx, row_data in enumerate(data, start=2):  # Start from row 2 (row 1 is header)
+        ws.append(row_data)
+        apply_error_formatting(ws, row_idx)  # Apply red background if any errors are present in the row
 
+    # Add failed URLs to the "Failed URLs" worksheet
+    for failed_url in failed_urls:
+        failed_ws.append([failed_url])  # Add each failed URL to the new sheet
+
+    # Save the Excel file
     file_path = os.path.join(os.getcwd(), 'GII.xlsx')
     wb.save(file_path)
 
+    # Return the failed URLs and the download link
     return render_template('index.html', failed_urls=failed_urls, file_path=file_path)
+
 
 @app.route('/download')
 def download_file():
     file_path = request.args.get('file_path')
     return send_file(file_path, as_attachment=True)
+
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
