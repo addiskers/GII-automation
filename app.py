@@ -76,6 +76,7 @@ def extract_bullet_points(ul_element, level=0):
 
 
 def extract_report_details(soup):
+    try:
         description = soup.find("div", class_="report-details-description")
         first_para = description.find("p").text.strip()
         market_name = first_para.split("Market", 1)[0].strip()
@@ -137,35 +138,41 @@ def extract_report_details(soup):
             ]
         )  
         return description_content
-
+    except Exception as e:
+        print(f"Error extracting report details: {str(e)}")
+        return "Report details not available."
+    
 # Function to scrape 
 def scrape_report(url,driver):
-    driver = driver
-    driver.get(url)
-    WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.CLASS_NAME, "tabs-bar")))
-    
-    page_source1 = driver.page_source
-    soup = BeautifulSoup(page_source1, "html.parser")
-    toc_tab = driver.find_element(By.CSS_SELECTOR, "a[href='#tab_default_3']")
-    driver.execute_script("arguments[0].scrollIntoView(true);", toc_tab)
-    
-    sleep(1)
-    driver.execute_script("arguments[0].click();", toc_tab)
-    WebDriverWait(driver, 10).until(EC.visibility_of_element_located((By.ID, "tab_default_3")))
-    WebDriverWait(driver, 10).until(EC.visibility_of_element_located((By.CLASS_NAME, "special-toc-class")))
-    page_source = driver.page_source
-    soup_toc = BeautifulSoup(page_source, "html.parser")
-    toc_section = soup_toc.find("div", {"class": "special-toc-class"})
-    print(toc_section)
-    if toc_section:
-        ul_element = toc_section.find("ul")
-        if ul_element:
-            bullet_points = extract_bullet_points(ul_element)
+    try:
+        driver = driver
+        driver.get(url)
+        WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.CLASS_NAME, "tabs-bar")))
+        
+        page_source1 = driver.page_source
+        soup = BeautifulSoup(page_source1, "html.parser")
+        toc_tab = driver.find_element(By.CSS_SELECTOR, "a[href='#tab_default_3']")
+        driver.execute_script("arguments[0].scrollIntoView(true);", toc_tab)
+        
+        sleep(1)
+        driver.execute_script("arguments[0].click();", toc_tab)
+        WebDriverWait(driver, 10).until(EC.visibility_of_element_located((By.ID, "tab_default_3")))
+        WebDriverWait(driver, 10).until(EC.visibility_of_element_located((By.CLASS_NAME, "special-toc-class")))
+        page_source = driver.page_source
+        soup_toc = BeautifulSoup(page_source, "html.parser")
+        toc_section = soup_toc.find("div", {"class": "special-toc-class"})
+        print(toc_section)
+        if toc_section:
+            ul_element = toc_section.find("ul")
+            if ul_element:
+                bullet_points = extract_bullet_points(ul_element)
 
-    bullet_points_str = "\n".join(bullet_points)
-    lines = bullet_points_str.strip().split("\n")
-    toc_content = "\n".join(lines)
-    
+        bullet_points_str = "\n".join(bullet_points)
+        lines = bullet_points_str.strip().split("\n")
+        toc_content = "\n".join(lines)
+    except Exception as e:
+            print(f"Error extracting table of contents for URL {url}: {str(e)}")
+            
    
     summary = extract_report_details(soup)
     
@@ -190,43 +197,51 @@ def scrape_report(url,driver):
     sector = soup.find("ol", class_="MuiBreadcrumbs-ol css-nhb8h9").find_all("li", class_="MuiBreadcrumbs-li")[1].text.strip() if soup.find("ol", class_="MuiBreadcrumbs-ol css-nhb8h9") else ""
     
     companies_list = []
-    ten_div = soup.select_one("#tab_default_1 > div:nth-of-type(10)")
-    companies_list = []
-    if ten_div:
-        ul_elements = ten_div.find_all("ul")
-    for ul in ul_elements:
-        preceding_p = ul.find_previous_sibling('p')
-        if preceding_p and 'top player' in preceding_p.get_text(strip=True).lower():
-            for li in ul.find_all("li"):
-                company = li.text.strip()
-                if company and company != '&nbsp;':
-                    companies_list.append(f"◦ {company}")
-        elif preceding_p and 'recent development' in preceding_p.get_text(strip=True).lower():
-            break 
+    try:
+        ten_div = soup.select_one("#tab_default_1 > div:nth-of-type(10)")
+        companies_list = []
+        if ten_div:
+            ul_elements = ten_div.find_all("ul")
+        for ul in ul_elements:
+            preceding_p = ul.find_previous_sibling('p')
+            if preceding_p and 'top player' in preceding_p.get_text(strip=True).lower():
+                for li in ul.find_all("li"):
+                    company = li.text.strip()
+                    if company and company != '&nbsp;':
+                        companies_list.append(f"◦ {company}")
+            elif preceding_p and 'recent development' in preceding_p.get_text(strip=True).lower():
+                break 
+        cell_companies = "\n".join(companies_list)
+    except Exception as e:
+            print(f"Error extracting companies for URL {url}: {str(e)}")
 
-    cell_companies = "\n".join(companies_list)
+        
 
 
     
     # Segments
     seg = soup.find("td", class_="fw-bold", string="Segments covered")
     segments_list = []
-    if seg:
-        next_td = seg.find_next_sibling()
-        next_td_ul = next_td.find("ul")
-        next_td_li = next_td_ul.find_all("li", recursive=False) if next_td_ul else []
-        for li in next_td_li:
-            main_category = li.contents[0].strip()
-            subcategory = li.find("ul")
-            if subcategory:
-                subcategory_items = [item.strip() for item in subcategory.stripped_strings]
-                subcategory_text = ", ".join(subcategory_items)
-                formatted_output = f"By {main_category} ({subcategory_text})"
-            else:
-                formatted_output = f"By {main_category}"
-            segments_list.append(formatted_output)
-    products = ", ".join(segments_list)
-    
+    try:
+        if seg:
+            next_td = seg.find_next_sibling()
+            next_td_ul = next_td.find("ul")
+            next_td_li = next_td_ul.find_all("li", recursive=False) if next_td_ul else []
+            for li in next_td_li:
+                main_category = li.contents[0].strip()
+                subcategory = li.find("ul")
+                if subcategory:
+                    subcategory_items = [item.strip() for item in subcategory.stripped_strings]
+                    subcategory_text = ", ".join(subcategory_items)
+                    formatted_output = f"By {main_category} ({subcategory_text})"
+                else:
+                    formatted_output = f"By {main_category}"
+                segments_list.append(formatted_output)
+        products = ", ".join(segments_list)
+    except Exception as e:
+            print(f"Error extracting segments for URL {url}: {str(e)}")
+
+
     # Values and years
     first_para = soup.find("div", class_="report-details-description").find("p").text.strip()
     value_pattern = re.compile(r"USD (\d+\.?\d*)\s*(Billion|Million|Trillion|billion|million|trillion)")
@@ -267,13 +282,14 @@ def index():
 # generate Excel file
 @app.route('/generate', methods=['POST'])
 def generate_excel():
-    driver=setup_selenium_driver()
+    driver = setup_selenium_driver()
     urls = request.form.get('urls').split('\n')
-    urls = [url.strip() for url in urls if url.strip()]  
+    urls = [url.strip() for url in urls if url.strip()]
 
     global data
-    data = []
+    data = []  # Clear data list to avoid duplicate rows
 
+    # Set up Excel workbook
     wb = Workbook()
     ws = wb.active
     headers = ["Title", "Product Code", "URL", "Date", "Length", "Headline", 
@@ -282,22 +298,40 @@ def generate_excel():
                "Agenda / Schedule", "Executive Summary", "Sector", "Countries Covered", 
                "Companies Mentioned", "Products Mentioned", "2022", "2023", "2031", "CAGR %", "Currency"]
     ws.append(headers)
+
+    # Style the headers
     yellow_fill = PatternFill(start_color="FFFF00", end_color="FFFF00", fill_type="solid")
     bold_font = Font(bold=True)
-    for cell in ws[1]: 
+    for cell in ws[1]:
         cell.fill = yellow_fill
         cell.font = bold_font
-    
 
+    failed_urls = []  # List to track failed URLs
+
+    # Scrape each URL and append data
     for url in urls:
-        scrape_report(url,driver)   
+        try:
+            scrape_report(url, driver)  # Scrape the report
+        except Exception as e:
+            print(f"Error processing URL {url}: {str(e)}")
+            failed_urls.append(url)  # Add failed URL to the list
+
+    # Append successful data to the Excel sheet
     for row in data:
         ws.append(row)
 
+    # Save the Excel file
     file_path = os.path.join(os.getcwd(), 'GII.xlsx')
     wb.save(file_path)
+
+    # Return the page showing failed URLs and download link
+    return render_template('index.html', failed_urls=failed_urls, file_path=file_path)
+
+@app.route('/download')
+def download_file():
+    file_path = request.args.get('file_path')
     return send_file(file_path, as_attachment=True)
 
 if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 5000))  
-    app.run(host="0.0.0.0", port=port) 
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host="0.0.0.0", port=port)

@@ -1,6 +1,5 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -19,7 +18,6 @@
             height: 100vh;
             box-sizing: border-box;
         }
-
         h1 {
             font-size: 2.5rem;
             color: #03DAC5;
@@ -28,7 +26,6 @@
             margin-bottom: 40px;
             text-align: center;
         }
-
         form {
             background-color: #2a2a2a;
             border-radius: 10px;
@@ -37,14 +34,12 @@
             width: 90%;
             max-width: 600px;
         }
-
         label {
             font-size: 1.1rem;
             color: #BB86FC;
             display: block;
             margin-bottom: 10px;
         }
-
         textarea {
             background-color: #333;
             color: #f5f5f5;
@@ -57,11 +52,9 @@
             box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.2);
             resize: none;
         }
-
         textarea::placeholder {
             color: #888;
         }
-
         button {
             background-color: #03DAC5;
             color: #1c1c1c;
@@ -75,39 +68,53 @@
             width: 100%;
             transition: background-color 0.3s ease;
         }
-
         button:hover {
             background-color: #018786;
         }
-
         footer {
             margin-top: 40px;
             text-align: center;
             color: #BB86FC;
             font-size: 0.9rem;
         }
-
         footer strong {
             color: #03DAC5;
         }
-
-        /* Mobile responsiveness */
+        .error-container {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #bb0000;
+            color: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+            width: 90%;
+            max-width: 600px;
+        }
+        .error-container ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        .error-container li {
+            margin: 5px 0;
+            word-wrap: break-word;
+        }
         @media (max-width: 600px) {
             h1 {
                 font-size: 2rem;
             }
-
             form {
                 padding: 20px;
             }
-
             button {
                 font-size: 1rem;
+            }
+            .error-container {
+                width: 100%;
             }
         }
     </style>
 </head>
-
 <body>
     <h1>GII Report Automation</h1>
 
@@ -117,9 +124,27 @@
         <button type="submit">Generate Excel</button>
     </form>
 
+    <!-- Display failed URLs if any -->
+    {% if failed_urls %}
+    <div class="error-container">
+        <p><strong>Failed to process the following URLs:</strong></p>
+        <ul>
+            {% for url in failed_urls %}
+            <li>{{ url }}</li>
+            {% endfor %}
+        </ul>
+    </div>
+    {% endif %}
+
+    <!-- Download link for the Excel file -->
+    {% if file_path %}
+    <a href="/download?file_path={{ file_path }}">
+        <button>Download Excel File</button>
+    </a>
+    {% endif %}
+
     <footer>
         Created by <strong>SKY</strong>
     </footer>
 </body>
-
 </html>
