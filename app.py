@@ -170,6 +170,8 @@ def scrape_report(url,driver):
         bullet_points_str = "\n".join(bullet_points)
         lines = bullet_points_str.strip().split("\n")
         toc_content = "\n".join(lines)
+        if "• Introduction" not in toc_content or "o Objectives of the Study" not in toc_content:
+            toc_content = "Error"
     except Exception as e:
             print(f"Error extracting table of contents for URL {url}: {str(e)}")
             
@@ -287,9 +289,8 @@ def generate_excel():
     urls = [url.strip() for url in urls if url.strip()]
 
     global data
-    data = []  # Clear data list to avoid duplicate rows
+    data = []  
 
-    # Set up Excel workbook
     wb = Workbook()
     ws = wb.active
     headers = ["Title", "Product Code", "URL", "Date", "Length", "Headline", 
@@ -299,32 +300,27 @@ def generate_excel():
                "Companies Mentioned", "Products Mentioned", "2022", "2023", "2031", "CAGR %", "Currency"]
     ws.append(headers)
 
-    # Style the headers
     yellow_fill = PatternFill(start_color="FFFF00", end_color="FFFF00", fill_type="solid")
     bold_font = Font(bold=True)
     for cell in ws[1]:
         cell.fill = yellow_fill
         cell.font = bold_font
 
-    failed_urls = []  # List to track failed URLs
+    failed_urls = []  
 
-    # Scrape each URL and append data
     for url in urls:
         try:
-            scrape_report(url, driver)  # Scrape the report
+            scrape_report(url, driver) 
         except Exception as e:
             print(f"Error processing URL {url}: {str(e)}")
-            failed_urls.append(url)  # Add failed URL to the list
+            failed_urls.append(url)  
 
-    # Append successful data to the Excel sheet
     for row in data:
         ws.append(row)
 
-    # Save the Excel file
     file_path = os.path.join(os.getcwd(), 'GII.xlsx')
     wb.save(file_path)
 
-    # Return the page showing failed URLs and download link
     return render_template('index.html', failed_urls=failed_urls, file_path=file_path)
 
 @app.route('/download')
