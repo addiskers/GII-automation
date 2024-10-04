@@ -198,7 +198,7 @@ def scrape_report(url,driver):
 
     sector = soup.find("ol", class_="MuiBreadcrumbs-ol css-nhb8h9").find_all("li", class_="MuiBreadcrumbs-li")[1].text.strip() if soup.find("ol", class_="MuiBreadcrumbs-ol css-nhb8h9") else ""
     
-    companies_list = []
+   
     try:
         ten_div = soup.select_one("#tab_default_1 > div:nth-of-type(10)")
         companies_list = []
@@ -214,6 +214,8 @@ def scrape_report(url,driver):
             elif preceding_p and 'recent development' in preceding_p.get_text(strip=True).lower():
                 break 
         cell_companies = "\n".join(companies_list)
+        if not cell_companies:
+            cell_companies = "Error" 
     except Exception as e:
             print(f"Error extracting companies for URL {url}: {str(e)}")
 
