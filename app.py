@@ -79,7 +79,7 @@ def extract_report_details(soup):
     try:
         description = soup.find("div", class_="report-details-description")
         first_para = description.find("p").text.strip()
-        market_name = first_para.split("Market", 1)[0].strip()
+        market_name = first_para.lower().split("market", 1)[0].strip()
         all_paragraphs = description.find_all("p")
         remaining_paragraphs = [para.text for para in all_paragraphs[1:]]
         remaining_text = "\n".join(remaining_paragraphs)
