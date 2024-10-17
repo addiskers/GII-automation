@@ -234,6 +234,15 @@ def scrape_report(url,driver):
             print(f"Error extracting segments for URL {url}: {str(e)}")
 
 
+    image_div = soup.find("div", class_="report-img")
+    image_url = None
+    if image_div:
+        img_tag = image_div.find("img")
+        if img_tag and 'src' in img_tag.attrs:
+            image_url = img_tag['src']
+
+
+
     first_para = soup.find("div", class_="report-details-description").find("p").text.strip()
     value_pattern = re.compile(r"USD (\d+\.?\d*)\s*(Billion|Million|Trillion|billion|million|trillion)")
     year_pattern = re.compile(r"\b(2022|2023|2031)\b")
@@ -283,7 +292,8 @@ def scrape_report(url,driver):
             "data_2023": data_2023,
             "data_2031": data_2031,
             "cagr": cagr_value,
-            "currency": currency
+            "currency": currency,
+            "image_url": image_url
         }
    
 

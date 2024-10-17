@@ -3,10 +3,17 @@ from utils.scraper import setup_selenium_driver, scrape_report
 from openpyxl import Workbook
 from openpyxl.styles import PatternFill, Font
 import os
+from utils.image_utils import download_image, create_image_zip, cleanup_directory
+from urllib.parse import urlparse
+
 
 generate_routes = Blueprint('generate_routes', __name__)
 
 red_fill = PatternFill(start_color="FF0000", end_color="FF0000", fill_type="solid")
+
+def get_market_name_from_url(url):
+    parsed_url = urlparse(url)
+    return os.path.basename(parsed_url.path)
 
 @generate_routes.route('/generate', methods=['POST'])
 def generate_excel():
@@ -24,7 +31,7 @@ def generate_excel():
             if report_data:
                 scraped_data.append(report_data)
                 if report_data.get("image_url"):
-                    image_urls.append(report_data["image_url"])
+                    image_urls.append((report_data["image_url"], get_market_name_from_url(url)))
             else:
                 failed_urls.append(url)
         except Exception as e:
@@ -32,9 +39,13 @@ def generate_excel():
             failed_urls.append(url)
         
     driver.quit()
-    image_urls_str = ','.join(image_urls)
+    cleanup_directory("images")
+    downloaded_images = [download_image(img_url, name=market_name) for img_url, market_name in image_urls]
+    image_zip_path = create_image_zip(downloaded_images)
+
     file_path = create_excel_report(scraped_data, failed_urls)
-    return render_template('index.html', failed_urls=failed_urls, file_path=file_path, image_urls=image_urls_str)
+    return render_template('index.html', failed_urls=failed_urls, file_path=file_path,  image_zip=image_zip_path)
+
 
 def create_excel_report(scraped_data, failed_urls):
     """Generates Excel report from the scraped data and saves it."""
@@ -98,7 +109,14 @@ def apply_error_formatting(ws, row_idx):
             for row_cell in ws[row_idx]:
                 row_cell.fill = red_fill
 
+                
+@generate_routes.route('/download-images', methods=['GET'])
+def download_images():
+    zip_file_path = request.args.get('image_zip')
+    return send_file(zip_file_path, as_attachment=True)
+
 @generate_routes.route('/download')
 def download_file():
     file_path = request.args.get('file_path')
     return send_file(file_path, as_attachment=True)
+
