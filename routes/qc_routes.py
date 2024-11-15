@@ -84,3 +84,39 @@ def qc_check():
     print(f"Matched reports saved to {output_path}")
 
     return send_file(output_path, as_attachment=True, download_name="matched_reports.xlsx")
+
+
+
+@qc_routes.route("/qc/add", methods=["POST"])
+def qc_add():
+    base_dir = Path(__file__).resolve().parent.parent
+    master_path = base_dir / "master_reports.xlsx"
+    scraped_path = base_dir / "scraped_reports.xlsx"
+    missing_path = base_dir / "missing_reports.xlsx"
+
+    if not scraped_path.exists():
+        return jsonify({"error": "scraped_reports.xlsx not found"}), 404
+    scraped_df = pd.read_excel(scraped_path)
+
+    if not master_path.exists():
+        scraped_df.to_excel(master_path, index=False)
+        return jsonify({"message": "Master report created as it didn't exist."})
+
+    master_df = pd.read_excel(master_path)
+
+    master_df["Product Code"] = master_df["Product Code"].str.strip().str.replace(r"\W+", "", regex=True)
+    scraped_df["Product Code"] = scraped_df["Product Code"].str.strip().str.replace(r"\W+", "", regex=True)
+
+    missing_codes = set(master_df["Product Code"]) - set(scraped_df["Product Code"])
+    missing_df = master_df[master_df["Product Code"].isin(missing_codes)]
+
+    missing_df.to_excel(missing_path, index=False)
+
+    new_reports = scraped_df[~scraped_df["Product Code"].isin(master_df["Product Code"])]
+    updated_master_df = pd.concat([master_df, new_reports], ignore_index=True)
+    updated_master_df.to_excel(master_path, index=False)
+
+    print(f"Master report updated at {master_path}")
+    print(f"Missing reports saved to {missing_path}")
+
+    return send_file(missing_path, as_attachment=True, download_name="missing_reports.xlsx")
