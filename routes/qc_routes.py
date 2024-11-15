@@ -27,7 +27,11 @@ def qc_refresh():
 
     scrapy_project_path = os.path.join(os.path.dirname(__file__), '..', 'gii_scraper')
     scrapy_command = ["scrapy", "crawl", "gii_spider"]
-    subprocess.Popen(scrapy_command, cwd=scrapy_project_path)
+    result = subprocess.run(scrapy_command, cwd=scrapy_project_path, capture_output=True, text=True)
+
+    if result.returncode != 0:
+        return jsonify({"error": "Scrapy spider failed", "details": result.stderr}), 500
+
     return redirect(url_for('qc_routes.qc'))
 
 
