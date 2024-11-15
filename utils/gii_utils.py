@@ -8,15 +8,15 @@ from selenium.webdriver.support import expected_conditions as EC
 from bs4 import BeautifulSoup
 
 def setup_gii_driver():
-    options = webdriver.ChromeOptions()
-    options.add_argument('--no-sandbox')
-    #options.add_argument('--headless') 
-    options.add_argument('--ignore-certificate-errors')
-    options.add_argument('--disable-dev-shm-usage')
-    options.add_argument('--disable-extensions')
-    options.add_argument('--disable-gpu')
-    driver = webdriver.Chrome(options=options)
-    return driver
+        options = webdriver.ChromeOptions()
+        options.add_argument('--no-sandbox')
+        options.add_argument('--headless')
+        options.add_argument('--ignore-certificate-errors')
+        options.add_argument('--disable-dev-shm-usage')
+        options.add_argument('--disable-extensions')
+        options.add_argument('--disable-gpu')
+        driver = webdriver.Chrome(options=options)
+        return driver
 
 def scrape_gii_reports():
     url = "https://www.giiresearch.com/publisher/sky/"
