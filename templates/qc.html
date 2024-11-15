@@ -96,8 +96,12 @@
         }
     </style>
     <script>
-        function showLoading() {
-            document.getElementById('spinner').style.display = 'block';
+        function showLoading(event) {
+            const form = event.target;
+            const action = form.getAttribute("action");
+            if (action === "/qc/Refresh") {
+                document.getElementById("loading-icon").style.display = "block";
+            }
         }
     </script>
 </head>
