@@ -84,6 +84,7 @@ def extract_report_details(soup):
         Top-down and bottom-up approaches were used to estimate and validate the size of the {market_name} market and to estimate the size of various other dependent submarkets. The research methodology used to estimate the market size includes the following details: The key players in the market were identified through secondary research, and their market shares in the respective regions were determined through primary and secondary research. This entire procedure includes the study of the annual and financial reports of the top market players and extensive interviews for key insights from industry leaders such as CEOs, VPs, directors, and marketing executives. All percentage shares split, and breakdowns were determined using secondary sources and verified through Primary sources. All possible parameters that affect the markets covered in this research study have been accounted for, viewed in extensive detail, verified through primary research, and analyzed to get the final quantitative and qualitative data.
         """.strip()
         forth_para = f"{market_name} Market Segmental Analysis".strip()
+        print(market_name)
         fifth_para = soup.select_one("#tab_default_1 > div:nth-of-type(3) > p").text.strip()
         sixth_para = f"Driver of the {market_name} Market".strip()
         ninth_div = soup.select_one("#tab_default_1 > div:nth-of-type(9)")
@@ -156,7 +157,6 @@ def scrape_report(url,driver):
         page_source = driver.page_source
         soup_toc = BeautifulSoup(page_source, "html.parser")
         toc_section = soup_toc.find("div", {"class": "special-toc-class"})
-        print(toc_section)
         if toc_section:
             ul_element = toc_section.find("ul")
             if ul_element:
