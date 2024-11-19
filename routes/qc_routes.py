@@ -78,11 +78,18 @@ def qc_check():
     scraped_codes_df["Product Code_scraped"] = scraped_codes_df["Product Code_scraped"].str.strip().str.replace(r"\W+", "", regex=True)
     scraped_reports_df["Product Code"] = scraped_reports_df["Product Code"].str.strip().str.replace(r"\W+", "", regex=True)
 
-    comparison_results = scraped_codes_df[["Link", "Product Code_scraped"]].copy()
+    comparison_results = scraped_codes_df[["Link","Product Code_scraped"]].copy()
 
     comparison_results["Match Status"] = comparison_results["Product Code_scraped"].apply(
         lambda scraped_code: "Yes" if scraped_code in scraped_reports_df["Product Code"].values else "No"
     )
+
+    comparison_results = comparison_results.merge(
+    scraped_reports_df[["Product Code", "Published Date"]],
+    how="left", 
+    left_on="Product Code_scraped", 
+    right_on="Product Code"
+    ).drop(columns="Product Code") 
 
     comparison_results.to_excel(output_path, index=False)
     print(f"Matched reports saved to {output_path}")
@@ -113,7 +120,7 @@ def qc_add():
 
     missing_codes = set(master_df["Product Code"]) - set(scraped_df["Product Code"])
     missing_df = master_df[master_df["Product Code"].isin(missing_codes)]
-
+    
     missing_df.to_excel(missing_path, index=False)
 
     new_reports = scraped_df[~scraped_df["Product Code"].isin(master_df["Product Code"])]
