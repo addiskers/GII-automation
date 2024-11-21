@@ -8,6 +8,7 @@ from dotenv import load_dotenv
 import os,re
 from selenium import webdriver
 from time import sleep
+from urllib.parse import urlparse
 
 
 load_dotenv()
@@ -71,78 +72,109 @@ def extract_bullet_points(ul_element, level=0):
 
 
 def extract_report_details(soup):
-    try:
-        description = soup.find("div", class_="report-details-description")
-        first_para = description.find("p").text.strip()
-        market_name = first_para.lower().split("market", 1)[0].strip().title()
-        all_paragraphs = description.find_all("p")
-        remaining_paragraphs = [para.text for para in all_paragraphs[1:]]
-        remaining_text = "\n".join(remaining_paragraphs)
-        remaining_text_instruction = "Rephrase as a market insights in 250 words in one paragraph"
-        second_para = AI(remaining_text, remaining_text_instruction).strip()
-        third_para = f"""
-        Top-down and bottom-up approaches were used to estimate and validate the size of the {market_name} market and to estimate the size of various other dependent submarkets. The research methodology used to estimate the market size includes the following details: The key players in the market were identified through secondary research, and their market shares in the respective regions were determined through primary and secondary research. This entire procedure includes the study of the annual and financial reports of the top market players and extensive interviews for key insights from industry leaders such as CEOs, VPs, directors, and marketing executives. All percentage shares split, and breakdowns were determined using secondary sources and verified through Primary sources. All possible parameters that affect the markets covered in this research study have been accounted for, viewed in extensive detail, verified through primary research, and analyzed to get the final quantitative and qualitative data.
-        """.strip()
-        forth_para = f"{market_name} Market Segmental Analysis".strip()
-        print(market_name)
-        fifth_para = soup.select_one("#tab_default_1 > div:nth-of-type(3) > p").text.strip()
-        sixth_para = f"Driver of the {market_name} Market".strip()
-        ninth_div = soup.select_one("#tab_default_1 > div:nth-of-type(9)")
-        driver_inst = f"Elaborate it as a market driver for {market_name} market in 100 words in one paragraph"
-        if ninth_div:
-            drivers = ninth_div.select_one("ul:nth-of-type(1)")
-            if drivers:
-                seventh_para = AI(drivers.text, driver_inst).strip()
-        eighth_para = f"Restraints in the {market_name} Market".strip()
-        ninth_inst = f"Elaborate it as a market restraint for {market_name} market in 100 words in one paragraph"
-        if ninth_div:
-            restraints_para = None
-            for p in ninth_div.find_all("p"):
-                if "restraint" in p.text.lower():
-                    restraints_para = p
-                    break
-
-            if restraints_para:
-                nextul = restraints_para.find_next_sibling("ul")
-                ninth_para = AI(nextul.text, ninth_inst).strip()
-        tenth_para = f"Market Trends of the {market_name} Market".strip()
-        eleven_div = soup.select_one("#tab_default_1 > div:nth-of-type(11)")
-        eleven_inst = f"Elaborate it as a market trend for {market_name} market in 100 words in one paragraph  "
-        if eleven_div:
-            ul_eleven = eleven_div.select_one("ul:nth-of-type(1)")
-            if ul_eleven:
-                ul_text = ul_eleven.text.strip()
-                eleven_para = AI(ul_text, eleven_inst).strip()
-            else:
-                print("No <ul> found in the 11th <div>.")
-        else:
-            print("No 11th <div> found in #tab_default_1.")
-
-        description_content = "\n\n".join(
-            [
-                first_para,
-                second_para,
-                third_para,
-                forth_para,
-                fifth_para,
-                sixth_para,
-                seventh_para,
-                eighth_para,
-                ninth_para,
-                tenth_para,
-                eleven_para,
+        try:
+            description = soup.find("div", class_="report-details-description")
+            first_para = description.find("p").text.strip()
+            market_name = first_para.lower().split("market", 1)[0].strip().title()
+            all_paragraphs = description.find_all("p")
+            remaining_paragraphs = [
+                para.text for para in all_paragraphs[1:] 
+                if "is poised to grow at a sustainable CAGR for the next forecast year" not in para.text
             ]
-        )  
-        return description_content
-    except Exception as e:
-        print(f"Error extracting report details: {str(e)}")
-        return "Report details not available."
+            remaining_text = "\n".join(remaining_paragraphs)
+            remaining_text_instruction = "Rephrase as a market insights in 250 words in one paragraph"
+            second_para = AI(remaining_text, remaining_text_instruction).strip()
+            third_para = f"""
+            Top-down and bottom-up approaches were used to estimate and validate the size of the {market_name} market and to estimate the size of various other dependent submarkets. The research methodology used to estimate the market size includes the following details: The key players in the market were identified through secondary research, and their market shares in the respective regions were determined through primary and secondary research. This entire procedure includes the study of the annual and financial reports of the top market players and extensive interviews for key insights from industry leaders such as CEOs, VPs, directors, and marketing executives. All percentage shares split, and breakdowns were determined using secondary sources and verified through Primary sources. All possible parameters that affect the markets covered in this research study have been accounted for, viewed in extensive detail, verified through primary research, and analyzed to get the final quantitative and qualitative data.
+            """.strip()
+            forth_para = f"{market_name} Market Segmental Analysis".strip()
+            print(market_name)
+            fifth_para = soup.select_one("#tab_default_1 > div:nth-of-type(3) > p").text.strip()
+            sixth_para = f"Driver of the {market_name} Market".strip()
+
+            h2_elements = soup.find_all("h2", class_="report-title")
+            driver_inst = f"rephrase this market is {market_name} market driver i need 100 words in one paragraph"
+            restraint_inst = f"rephrase this market is {market_name} market restraint i need 100 words in one paragraph"
+            h2_elements = soup.find_all("h2", class_="report-title")
+            for h2 in h2_elements:
+                if "market dynamics" in h2.text.lower():
+                    next_div = h2.find_next_sibling("div")
+                    if next_div:
+                        paragraphs = next_div.find_all("p")
+                        driver_processed = False
+                        restraint_processed = False
+                        for i, p in enumerate(paragraphs):
+                            if not driver_processed and "driver" in p.text.lower():
+                                diverlist = [p.get_text(strip=True)]
+                                next_elements = p.find_next_siblings(limit=2)
+                                for elem in next_elements:
+                                    diverlist.append(elem.get_text(strip=True))
+                                
+                                print("Driver Content:")
+                                diverlist_text = "\n".join(diverlist)
+                                seventh_para = AI(diverlist_text, driver_inst).strip()
+                                driver_processed = True 
+                            
+                            elif not restraint_processed and "restraint" in p.text.lower():
+                                restraintlist = [p.get_text(strip=True)]
+                                next_elements = p.find_next_siblings(limit=2)
+                                for elem in next_elements:
+                                    restraintlist.append(elem.get_text(strip=True))
+                                
+                                print("Restraint Content:")
+                                restraintlist_text = "\n".join(restraintlist)
+                                ninth_para = AI(restraintlist_text, restraint_inst).strip()
+                                restraint_processed = True
+                            if driver_processed and restraint_processed:
+                                break
+
+            eighth_para = f"Restraints in the {market_name} Market".strip()
+            tenth_para = f"Market Trends of the {market_name} Market".strip()
+            eleven_inst = f"Elaborate it as a market trend for {market_name} market in 100 words in one paragraph "
+            for h2 in h2_elements:
+                if "market trend" in h2.text.lower():
+                    next_div1 = h2.find_next_sibling("div")
+                    if next_div1:
+                        first_li = next_div1.find("li")
+                        if first_li:
+                            eleven_para = AI(first_li.get_text(strip=True), eleven_inst).strip()
+
+                        else:
+                            print("No <li> found in the div.")
+            
+
+            description_content = "\n\n".join(
+                [
+                    first_para,
+                    second_para,
+                    third_para,
+                    forth_para,
+                    fifth_para,
+                    sixth_para,
+                    seventh_para,
+                    eighth_para,
+                    ninth_para,
+                    tenth_para,
+                    eleven_para,
+                ]
+            )  
+            return description_content
+        except Exception as e:
+            print(f"Error extracting report details: {str(e)}")
+            return "Report details not available."
     
+
+def format_url(url):
+    if not url.startswith("http://") and not url.startswith("https://"):
+        url = "https://" + url
+    return url
+
 
 def scrape_report(url,driver):
     try:
         driver = driver
-        driver.get(url)
+        formatted_url = format_url(url)
+        driver.get(formatted_url)
         WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.CLASS_NAME, "tabs-bar")))
         
         page_source1 = driver.page_source
@@ -192,24 +224,28 @@ def scrape_report(url,driver):
     
    
     try:
-        ten_div = soup.select_one("#tab_default_1 > div:nth-of-type(10)")
+        h2_elements = soup.find_all("h2", class_="report-title")  
         companies_list = []
-        if ten_div:
-            ul_elements = ten_div.find_all("ul")
-        for ul in ul_elements:
-            preceding_p = ul.find_previous_sibling('p')
-            if preceding_p and 'top player' in preceding_p.get_text(strip=True).lower():
-                for li in ul.find_all("li"):
-                    company = li.text.strip()
-                    if company and company != '&nbsp;':
-                        companies_list.append(f"◦ {company}")
-            elif preceding_p and 'recent development' in preceding_p.get_text(strip=True).lower():
-                break 
-        cell_companies = "\n".join(companies_list)
+
+        for h2 in h2_elements:
+            if "competitive landscape" in h2.text.lower():  
+                next_div1 = h2.find_next_sibling("div")  
+                if next_div1:
+                    first_ul = next_div1.find("ul")  
+                    if first_ul:
+                        for li in first_ul.find_all("li"): 
+                            company = li.text.strip()
+                            if company and company != '&nbsp;':  
+                                companies_list.append(f"◦ {company}")
+                    break 
+
+        cell_companies = "\n".join(companies_list)  
         if not cell_companies:
-            cell_companies = "Error" 
+            cell_companies = "Error"  
+
     except Exception as e:
-            print(f"Error extracting companies for URL {url}: {str(e)}")
+        print(f"Error extracting companies: {str(e)}")
+    print(cell_companies)
 
         
     seg = soup.find("td", class_="fw-bold", string="Segments covered")
