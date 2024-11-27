@@ -105,7 +105,7 @@ def create_excel_report(scraped_data, failed_urls):
 
 def apply_error_formatting(ws, row_idx):
     for cell in ws[row_idx]:
-        if cell.value == "Error":
+        if cell.value == "Error" or cell.value == "Report details not available.":
             for row_cell in ws[row_idx]:
                 row_cell.fill = red_fill
 

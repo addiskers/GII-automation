@@ -197,9 +197,23 @@ def scrape_report(url,driver):
         bullet_points_str = "\n".join(bullet_points)
         lines = bullet_points_str.strip().split("\n")
         toc_content = "\n".join(lines)
-        if "• Introduction" not in toc_content or "o Objectives of the Study" not in toc_content:
+        required_keywords = [
+                "• Introduction",
+                "o Objectives of the Study",
+                "• Market Dynamics & Outlook",
+                "o Market Dynamics",
+                "o Degree of Competition",
+                " US",
+                " Canada",
+                "• Key Company Profiles",
+                " Company Overview",
+                " Business Segment Overview",
+                " Financial Updates",
+                " Key Developments"
+            ]
+        if not all(keyword in toc_content for keyword in required_keywords):
             toc_content = "Error"
-    except Exception as e:
+    except Exception as e:  
             print(f"Error extracting table of contents for URL {url}: {str(e)}")
             
    
@@ -240,7 +254,7 @@ def scrape_report(url,driver):
                     break 
 
         cell_companies = "\n".join(companies_list)  
-        if not cell_companies:
+        if not cell_companies or len(cell_companies) < 5:
             cell_companies = "Error"  
 
     except Exception as e:
