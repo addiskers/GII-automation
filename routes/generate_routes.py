@@ -1,10 +1,11 @@
 from flask import Blueprint, request, render_template, send_file
-from utils.scraper import setup_selenium_driver, scrape_report
+from utils.scraper import setup_selenium_driver, scrape_report,format_url
 from openpyxl import Workbook
 from openpyxl.styles import PatternFill, Font
 import os
 from utils.image_utils import download_image, create_image_zip, cleanup_directory
 from urllib.parse import urlparse
+from bs4 import BeautifulSoup
 
 
 generate_routes = Blueprint('generate_routes', __name__)
@@ -24,14 +25,12 @@ def generate_excel():
 
     scraped_data = []
     failed_urls = []
-    image_urls = [] 
     for url in urls:
         try:
             report_data = scrape_report(url, driver)
             if report_data:
                 scraped_data.append(report_data)
-                if report_data.get("image_url"):
-                    image_urls.append((report_data["image_url"], get_market_name_from_url(url)))
+                
             else:
                 failed_urls.append(url)
         except Exception as e:
@@ -39,12 +38,9 @@ def generate_excel():
             failed_urls.append(url)
         
     driver.quit()
-    cleanup_directory("images")
-    downloaded_images = [download_image(img_url, name=market_name) for img_url, market_name in image_urls]
-    image_zip_path = create_image_zip(downloaded_images)
 
     file_path = create_excel_report(scraped_data, failed_urls)
-    return render_template('index.html', failed_urls=failed_urls, file_path=file_path,  image_zip=image_zip_path)
+    return render_template('index.html', failed_urls=failed_urls, file_path=file_path)
 
 
 def create_excel_report(scraped_data, failed_urls):
@@ -119,4 +115,47 @@ def download_images():
 def download_file():
     file_path = request.args.get('file_path')
     return send_file(file_path, as_attachment=True)
+
+@generate_routes.route('/generate-images', methods=['POST'])
+def generate_images():
+    urls = request.form.get('urls').strip().split('\n')
+    urls = [url.strip() for url in urls if url.strip()]
+
+    driver = setup_selenium_driver()
+
+    image_urls = []
+    failed_urls = []
+    for url in urls:
+        try:
+            formatted_url = format_url(url)
+            driver.get(formatted_url)
+            soup = BeautifulSoup(driver.page_source, "html.parser")
+
+            image_div = soup.find("div", class_="report-img")
+            if image_div:
+                img_tag = image_div.find("img")
+                if img_tag and 'src' in img_tag.attrs:
+                    market_name = get_market_name_from_url(url)
+                    image_urls.append((img_tag['src'], market_name))
+                else:
+                    failed_urls.append(url)
+            else:
+                failed_urls.append(url)
+        except Exception as e:
+            print(f"Error processing URL {url}: {str(e)}")
+            failed_urls.append(url)
+
+    driver.quit()
+
+    cleanup_directory("images")
+
+    downloaded_images = [download_image(img_url, name=market_name) for img_url, market_name in image_urls]
+    image_zip_path = create_image_zip(downloaded_images)
+
+    return render_template(
+        'index.html',
+        image_zip=image_zip_path,
+        failed_urls=failed_urls,
+        message=f"Successfully processed {len(downloaded_images)} images. {len(failed_urls)} URLs failed."
+    )
 

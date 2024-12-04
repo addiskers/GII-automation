@@ -8,7 +8,6 @@ from dotenv import load_dotenv
 import os,re
 from selenium import webdriver
 from time import sleep
-from urllib.parse import urlparse
 
 
 load_dotenv()
