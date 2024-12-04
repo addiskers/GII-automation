@@ -82,7 +82,7 @@ def extract_report_details(soup):
                 if "is poised to grow at a sustainable CAGR for the next forecast year" not in para.text
             ]
             remaining_text = "\n".join(remaining_paragraphs)
-            remaining_text_instruction = "Rephrase as a market insights in 250 words in one paragraph"
+            remaining_text_instruction = "Rephrase as a market insights in 120 words in one paragraph"
             second_para = AI(remaining_text, remaining_text_instruction).strip()
             third_para = f"""
             Top-down and bottom-up approaches were used to estimate and validate the size of the {market_name} market and to estimate the size of various other dependent submarkets. The research methodology used to estimate the market size includes the following details: The key players in the market were identified through secondary research, and their market shares in the respective regions were determined through primary and secondary research. This entire procedure includes the study of the annual and financial reports of the top market players and extensive interviews for key insights from industry leaders such as CEOs, VPs, directors, and marketing executives. All percentage shares split, and breakdowns were determined using secondary sources and verified through Primary sources. All possible parameters that affect the markets covered in this research study have been accounted for, viewed in extensive detail, verified through primary research, and analyzed to get the final quantitative and qualitative data.
@@ -91,7 +91,8 @@ def extract_report_details(soup):
             print(market_name)
             fifth_para = soup.select_one("#tab_default_1 > div:nth-of-type(3) > p").text.strip()
             sixth_para = f"Driver of the {market_name} Market".strip()
-
+            ninth_para=None
+            seventh_para=None
             h2_elements = soup.find_all("h2", class_="report-title")
             driver_inst = f"rephrase this market is {market_name} market driver i need 100 words in one paragraph"
             restraint_inst = f"rephrase this market is {market_name} market restraint i need 100 words in one paragraph"
@@ -127,6 +128,13 @@ def extract_report_details(soup):
                                 restraint_processed = True
                             if driver_processed and restraint_processed:
                                 break
+            if not seventh_para:
+                        ins_seventh = f"Write a driver for {market_name} in 100 words in one paragraph only."
+                        seventh_para = AI('',ins_seventh).strip()
+
+            if not ninth_para:
+                        ins_ninth = f"Write a restraint for {market_name} in 100 words in one paragraph only."
+                        ninth_para = AI('',ins_ninth).strip()
 
             eighth_para = f"Restraints in the {market_name} Market".strip()
             tenth_para = f"Market Trends of the {market_name} Market".strip()
