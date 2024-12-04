@@ -228,6 +228,11 @@ def scrape_report(url,driver):
     
     head_div = soup.find("div", class_="d-sm-flex flex-sm-row-reverse align-items-center title")
     title = head_div.find("h1").text.strip() if head_div else ""
+    print(title)
+    if "market name" in title.lower() or "market name," in title.lower():
+        title = "Error"
+
+
     
     code = soup.find("div", class_="report-segment-data max-width-640")
     report_id_tag = code.find("b", string="Report ID:") if code else None
@@ -260,8 +265,9 @@ def scrape_report(url,driver):
                                 companies_list.append(f"◦ {company}")
                     break 
 
-        cell_companies = "\n".join(companies_list)  
-        if not cell_companies or len(cell_companies) < 5:
+        cell_companies = "\n".join(companies_list)
+        companies_count = len(companies_list)
+        if not cell_companies or companies_count< 5:
             cell_companies = "Error"  
 
     except Exception as e:

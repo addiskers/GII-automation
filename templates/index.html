@@ -159,16 +159,24 @@
     </div>
     {% endif %}
 
-    <!-- Display Failed URLs -->
-    {% if failed_urls %}
-    <div class="error-container">
-        <p><strong>Failed URLs:</strong></p>
-        <ul>
-            {% for url in failed_urls %}
-            <li>{{ url }}</li>
-            {% endfor %}
-        </ul>
-    </div>
-    {% endif %}
+    <!-- Feedback Messages -->
+{% if message %}
+<div class="feedback-container">
+    <p>{{ message }}</p>
+</div>
+{% endif %}
+
+<!-- Display Failed URLs -->
+{% if failed_urls and failed_urls|length > 0 %}
+<div class="error-container">
+    <p><strong>Failed to process the following URLs:</strong></p>
+    <ul>
+        {% for url in failed_urls %}
+        <li>{{ url }}</li>
+        {% endfor %}
+    </ul>
+</div>
+{% endif %}
+
 </body>
 </html>

@@ -149,7 +149,14 @@ def generate_images():
 
     cleanup_directory("images")
 
-    downloaded_images = [download_image(img_url, name=market_name) for img_url, market_name in image_urls]
+    downloaded_images = []
+    for img_url, market_name in image_urls:
+        result = download_image(img_url, name=market_name)
+        if result is None:  
+            failed_urls.append(market_name)
+        else:
+            downloaded_images.append(result)
+
     image_zip_path = create_image_zip(downloaded_images)
 
     return render_template(
@@ -158,4 +165,3 @@ def generate_images():
         failed_urls=failed_urls,
         message=f"Successfully processed {len(downloaded_images)} images. {len(failed_urls)} URLs failed."
     )
-
