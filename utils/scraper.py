@@ -88,7 +88,17 @@ def extract_report_details(soup):
             """.strip()
             forth_para = f"{market_name} Market Segmental Analysis".strip()
             print(market_name)
-            fifth_para = soup.select_one("#tab_default_1 > div:nth-of-type(3) > p").text.strip()
+            fifth_para = None
+
+            p_element = soup.select_one("#tab_default_1 > div:nth-of-type(3) > p")
+
+            if p_element:
+                fifth_para = p_element.text.strip()
+            else:
+                div_element = soup.select_one("#tab_default_1 > div:nth-of-type(3) > div")
+                if div_element:
+                    fifth_para = div_element.text.strip()
+
             sixth_para = f"Driver of the {market_name} Market".strip()
             ninth_para=None
             seventh_para=None
