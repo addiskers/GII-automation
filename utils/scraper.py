@@ -13,8 +13,6 @@ from time import sleep
 load_dotenv()
 api_key = os.getenv("OPENAI_API_KEY")
 
-
-
 def setup_selenium_driver():
     options = webdriver.ChromeOptions()
     options.add_argument('--no-sandbox')
@@ -88,24 +86,29 @@ def extract_report_details(soup):
             """.strip()
             forth_para = f"{market_name} Market Segmental Analysis".strip()
             print(market_name)
-            fifth_para = None
-
-            p_element = soup.select_one("#tab_default_1 > div:nth-of-type(3) > p")
-
-            if p_element:
-                fifth_para = p_element.text.strip()
-            else:
-                div_element = soup.select_one("#tab_default_1 > div:nth-of-type(3) > div")
-                if div_element:
-                    fifth_para = div_element.text.strip()
-
+            h2_elements = soup.find_all("h2", class_="report-title")
+            fifth_para = None 
+            for h2 in h2_elements:
+                if "segmental analysis" in h2.text.lower():
+                    next_element = h2.find_next_sibling() 
+                    
+                    while next_element:
+                        if next_element.name == "p": 
+                            fifth_para = next_element.get_text(strip=True)
+                            break
+                        elif next_element.name == "div": 
+                            first_p = next_element.find("p") 
+                            if first_p:
+                                fifth_para = first_p.get_text(strip=True)
+                            break
+                        next_element = next_element.find_next_sibling()  
+                    
+                    break
             sixth_para = f"Driver of the {market_name} Market".strip()
             ninth_para=None
             seventh_para=None
-            h2_elements = soup.find_all("h2", class_="report-title")
             driver_inst = f"rephrase this market is {market_name} market driver i need 100 words in one paragraph"
             restraint_inst = f"rephrase this market is {market_name} market restraint i need 100 words in one paragraph"
-            h2_elements = soup.find_all("h2", class_="report-title")
             for h2 in h2_elements:
                 if "market dynamics" in h2.text.lower():
                     next_div = h2.find_next_sibling("div")
@@ -186,6 +189,42 @@ def format_url(url):
         url = "https://" + url
     return url
 
+def format_market_title(title):
+    pre_growth, post_growth = title.split("Growth Analysis,", 1)
+    
+    def smart_split(text):
+        segments = []
+        current_segment = []
+        paren_count = 0
+        
+        for char in text:
+            if char == '(':
+                paren_count += 1
+            elif char == ')':
+                paren_count -= 1
+            
+            if char == ',' and paren_count == 0:
+                segments.append(''.join(current_segment).strip())
+                current_segment = []
+            else:
+                current_segment.append(char)
+                
+        if current_segment:
+            segments.append(''.join(current_segment).strip())
+            
+        return segments
+    
+    segments = smart_split(post_growth)
+    
+    processed_segments = []
+    for i, segment in enumerate(segments):
+        if i < 2:  
+            processed_segments.append(segment)
+        else:
+            base_segment = segment.split('(')[0].strip()
+            processed_segments.append(base_segment)
+    
+    return f"{pre_growth}Growth Analysis, {', '.join(processed_segments)}"
 
 def scrape_report(url,driver):
     try:
@@ -238,6 +277,7 @@ def scrape_report(url,driver):
     
     head_div = soup.find("div", class_="d-sm-flex flex-sm-row-reverse align-items-center title")
     title = head_div.find("h1").text.strip() if head_div else ""
+    title = format_market_title(title)
     print(title)
     if "market name" in title.lower() or "market name," in title.lower():
         title = "Error"
