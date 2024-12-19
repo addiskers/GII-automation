@@ -322,7 +322,6 @@ def scrape_report(url,driver):
 
     except Exception as e:
         print(f"Error extracting companies: {str(e)}")
-    print(cell_companies)
 
         
     seg = soup.find("td", class_="fw-bold", string="Segments covered")
