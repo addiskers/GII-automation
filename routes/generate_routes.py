@@ -53,7 +53,7 @@ def create_excel_report(scraped_data, failed_urls):
                "Price: Single User\nFormat: PDF & Excel", "Price: Site License\nFormat: PDF & Excel",
                "Price: Enterprise License\nFormat: PDF & Excel", "Description", "Table of Content",
                "Agenda / Schedule", "Executive Summary", "Sector", "Countries Covered",
-               "Companies Mentioned", "Products Mentioned", "2022", "2023", "2031", "CAGR %", "Currency"]
+               "Companies Mentioned", "Products Mentioned", "2023", "2024", "2032", "CAGR %", "Currency"]
     ws.append(headers)
 
     yellow_fill = PatternFill(start_color="FFFF00", end_color="FFFF00", fill_type="solid")
