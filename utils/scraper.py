@@ -84,12 +84,12 @@ def extract_report_details(soup):
             third_para = f"""
             Top-down and bottom-up approaches were used to estimate and validate the size of the {market_name} market and to estimate the size of various other dependent submarkets. The research methodology used to estimate the market size includes the following details: The key players in the market were identified through secondary research, and their market shares in the respective regions were determined through primary and secondary research. This entire procedure includes the study of the annual and financial reports of the top market players and extensive interviews for key insights from industry leaders such as CEOs, VPs, directors, and marketing executives. All percentage shares split, and breakdowns were determined using secondary sources and verified through Primary sources. All possible parameters that affect the markets covered in this research study have been accounted for, viewed in extensive detail, verified through primary research, and analyzed to get the final quantitative and qualitative data.
             """.strip()
-            forth_para = f"{market_name} Market Segmental Analysis".strip()
+            forth_para = f"{market_name} Market Segments Analysis".strip()
             print(market_name)
             h2_elements = soup.find_all("h2", class_="report-title")
             fifth_para = None 
             for h2 in h2_elements:
-                if "segmental analysis" in h2.text.lower():
+                if "segments" in h2.text.lower():
                     next_element = h2.find_next_sibling() 
                     
                     while next_element:
