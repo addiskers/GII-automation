@@ -87,9 +87,11 @@ def extract_report_details(soup):
             forth_para = f"{market_name} Market Segments Analysis".strip()
             print(market_name)
             h2_elements = soup.find_all("h2", class_="report-title")
+            if not h2_elements: 
+                h2_elements = soup.find_all("div", class_="report-title")
             fifth_para = None 
             for h2 in h2_elements:
-                if "segments" in h2.text.lower():
+                if "segments" in h2.text.lower() or "segmental" in h2.text.lower():
                     next_element = h2.find_next_sibling() 
                     
                     while next_element:
@@ -152,7 +154,7 @@ def extract_report_details(soup):
             tenth_para = f"Market Trends of the {market_name} Market".strip()
             eleven_inst = f"Elaborate it as a market trend for {market_name} market in 100 words in one paragraph "
             for h2 in h2_elements:
-                if "market trend" in h2.text.lower():
+                if "trend" in h2.text.lower():
                     next_div1 = h2.find_next_sibling("div")
                     if next_div1:
                         first_li = next_div1.find("li")
@@ -300,7 +302,9 @@ def scrape_report(url,driver):
     
    
     try:
-        h2_elements = soup.find_all("h2", class_="report-title")  
+        h2_elements = soup.find_all("h2", class_="report-title")
+        if not h2_elements: 
+                h2_elements = soup.find_all("div", class_="report-title")  
         companies_list = []
 
         for h2 in h2_elements:
