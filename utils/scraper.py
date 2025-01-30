@@ -109,39 +109,60 @@ def extract_report_details(soup):
             sixth_para = f"Driver of the {market_name} Market".strip()
             ninth_para=None
             seventh_para=None
+            
             driver_inst = f"rephrase this market is {market_name} market driver i need 100 words in one paragraph"
             restraint_inst = f"rephrase this market is {market_name} market restraint i need 100 words in one paragraph"
             for h2 in h2_elements:
                 if "market dynamics" in h2.text.lower():
                     next_div = h2.find_next_sibling("div")
                     if next_div:
-                        paragraphs = next_div.find_all("p")
+                        h3_elements = next_div.find_all("h3")
+                        
                         driver_processed = False
                         restraint_processed = False
-                        for i, p in enumerate(paragraphs):
-                            if not driver_processed and "driver" in p.text.lower():
-                                diverlist = [p.get_text(strip=True)]
-                                next_elements = p.find_next_siblings(limit=2)
-                                for elem in next_elements:
-                                    diverlist.append(elem.get_text(strip=True))
-                                
-                                print("Driver Content:")
-                                diverlist_text = "\n".join(diverlist)
-                                seventh_para = AI(diverlist_text, driver_inst).strip()
-                                driver_processed = True 
-                            
-                            elif not restraint_processed and "restraint" in p.text.lower():
-                                restraintlist = [p.get_text(strip=True)]
-                                next_elements = p.find_next_siblings(limit=2)
-                                for elem in next_elements:
-                                    restraintlist.append(elem.get_text(strip=True))
-                                
-                                print("Restraint Content:")
-                                restraintlist_text = "\n".join(restraintlist)
-                                ninth_para = AI(restraintlist_text, restraint_inst).strip()
-                                restraint_processed = True
+                        for h3 in h3_elements:
+                            if not driver_processed and "driver" in h3.text.lower():
+                                diverlist = []
+                                first_li_text = None
+                                sibling = h3.find_next_sibling()
+                                while sibling and not first_li_text:
+                                    if sibling.name == "ul":
+                                        li_tag = sibling.find("li")
+                                        if li_tag:
+                                            first_li_text = li_tag.get_text(strip=True)
+                                            diverlist.append(first_li_text)
+                                    sibling = sibling.find_next_sibling()
+
+                                if diverlist:
+                                    print("Driver Content:")
+                                    print("\n".join(diverlist))
+
+                                    seventh_para = AI(diverlist, driver_inst).strip()
+                                    driver_processed = True
+
+                            elif not restraint_processed and "restraint" in h3.text.lower():
+                                restraintlist = []
+                                first_li_text = None
+
+                                sibling = h3.find_next_sibling()
+                                while sibling and not first_li_text:
+                                    if sibling.name == "ul":
+                                        li_tag = sibling.find("li")
+                                        if li_tag:
+                                            first_li_text = li_tag.get_text(strip=True)
+                                            restraintlist.append(first_li_text)
+                                    sibling = sibling.find_next_sibling()
+
+                                if restraintlist:
+                                    print("Restraint Content:")
+                                    print("\n".join(restraintlist))
+
+                                    ninth_para = AI(restraintlist, restraint_inst).strip()
+                                    restraint_processed = True
                             if driver_processed and restraint_processed:
                                 break
+
+                    break
             if not seventh_para:
                         ins_seventh = f"Write a driver for {market_name} in 100 words in one paragraph only."
                         seventh_para = AI('',ins_seventh).strip()
@@ -260,9 +281,6 @@ def scrape_report(url,driver):
                 "o Objectives of the Study",
                 "• Market Dynamics & Outlook",
                 "o Market Dynamics",
-                "o Degree of Competition",
-                " US",
-                " Canada",
                 "• Key Company Profiles",
                 " Company Overview",
                 " Business Segment Overview",
@@ -298,6 +316,13 @@ def scrape_report(url,driver):
         report_len_tag.next_sibling.strip() if report_len_tag and report_len_tag.next_sibling else ""
     )
     length = re.sub(r"\D+", "", length)
+
+    region_len_tag= code.find("b", string="Region:" )
+    if region_len_tag:
+        region = region_len_tag.next_sibling.strip() if region_len_tag.next_sibling else ""
+        region = re.sub(r"\W+", "", region)
+     
+
     sector = soup.find("ol", class_="MuiBreadcrumbs-ol css-nhb8h9").find_all("li", class_="MuiBreadcrumbs-li")[1].text.strip() if soup.find("ol", class_="MuiBreadcrumbs-ol css-nhb8h9") else ""
     
    
@@ -382,10 +407,14 @@ def scrape_report(url,driver):
     formatted_countries = [f"◦ {country}" for country in countries_list]
     cell_countries = "\n".join(formatted_countries)
     
-    
-    price_single = "5300"
-    price_sitelesense = "6200"
-    price_enterprise = "7100"
+    if region == "Global":
+        price_single = "5300"
+        price_sitelesense = "6200"
+        price_enterprise = "7100"
+    else:
+        price_single = "3500"
+        price_sitelesense = "4400"
+        price_enterprise = "5300"
     
     return {
             "title": title,
