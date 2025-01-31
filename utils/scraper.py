@@ -91,7 +91,7 @@ def extract_report_details(soup):
                 h2_elements = soup.find_all("div", class_="report-title")
             fifth_para = None 
             for h2 in h2_elements:
-                if "segments" in h2.text.lower() or "segmental" in h2.text.lower():
+                if "segments" in h2.get_text(strip=True).replace('\xa0', ' ').lower() or "segmental" in h2.get_text(strip=True).replace('\xa0', ' ').lower():
                     next_element = h2.find_next_sibling() 
                     
                     while next_element:
@@ -113,7 +113,7 @@ def extract_report_details(soup):
             driver_inst = f"rephrase this market is {market_name} market driver i need 100 words in one paragraph"
             restraint_inst = f"rephrase this market is {market_name} market restraint i need 100 words in one paragraph"
             for h2 in h2_elements:
-                if "market dynamics" in h2.text.lower():
+                if "market dynamics" in h2.get_text(strip=True).replace('\xa0', ' ').lower():
                     next_div = h2.find_next_sibling("div")
                     if next_div:
                         h3_elements = next_div.find_all("h3")
@@ -161,21 +161,47 @@ def extract_report_details(soup):
                                     restraint_processed = True
                             if driver_processed and restraint_processed:
                                 break
+                        if not driver_processed or not restraint_processed:
+                            p_elements = next_div.find_all("p")
+                            for p in p_elements:
+                                if not driver_processed and "driver" in p.text.lower():
+                                    diverlist = []
+                                    diverlist.append(p.get_text(strip=True))
+                                    next_tag = p.find_next(["li"])
+                                    if next_tag:
+                                        diverlist.append(next_tag.get_text(strip=True))
+                                    print("Driver Content (from <p>):")
+                                    print("\n".join(diverlist))
+
+                                    seventh_para = AI(diverlist, driver_inst).strip()
+                                    driver_processed = True
+                                    print(seventh_para)
+
+                                elif not restraint_processed and "restraint" in p.text.lower():
+                                    restraintlist = []
+                                    restraintlist.append(p.get_text(strip=True))
+                                    next_sib = p.find_next(["li"])
+                                    if next_sib:
+                                        restraintlist.append(next_sib.get_text(strip=True))
+
+                                    print("Restraint Content (from <p>):")
+                                    print("\n".join(restraintlist))
+
+                                    ninth_para = AI(restraintlist, restraint_inst).strip()
+                                    print(ninth_para)
+                                    restraint_processed = True
+
+                                if driver_processed and restraint_processed:
+                                    break
 
                     break
-            if not seventh_para:
-                        ins_seventh = f"Write a driver for {market_name} in 100 words in one paragraph only."
-                        seventh_para = AI('',ins_seventh).strip()
-
-            if not ninth_para:
-                        ins_ninth = f"Write a restraint for {market_name} in 100 words in one paragraph only."
-                        ninth_para = AI('',ins_ninth).strip()
+                  
 
             eighth_para = f"Restraints in the {market_name} Market".strip()
             tenth_para = f"Market Trends of the {market_name} Market".strip()
             eleven_inst = f"Elaborate it as a market trend for {market_name} market in 100 words in one paragraph "
             for h2 in h2_elements:
-                if "trend" in h2.text.lower():
+                if "trend" in h2.get_text(strip=True).replace('\xa0', ' ').lower():
                     next_div1 = h2.find_next_sibling("div")
                     if next_div1:
                         first_li = next_div1.find("li")
@@ -295,9 +321,21 @@ def scrape_report(url,driver):
    
     summary = extract_report_details(soup)
     
-    head_div = soup.find("div", class_="d-sm-flex flex-sm-row-reverse align-items-center title")
-    title = head_div.find("h1").text.strip() if head_div else ""
-    title = format_market_title(title)
+    head_div2 = soup.find(
+    "div", class_="d-sm-flex flex-sm-row-reverse align-items-center title report-second-header"
+    )
+
+    title2 = head_div2.find("h2").text.strip().split("By",1)[1]
+
+
+    head_div1 = soup.find(
+        "div", class_="report-main-header"
+    )
+
+    title1 = head_div1.find("h1").text.strip()
+
+    titles=title1+", By"+title2
+    title = format_market_title(titles)
     print(title)
     if "market name" in title.lower() or "market name," in title.lower():
         title = "Error"
@@ -333,7 +371,7 @@ def scrape_report(url,driver):
         companies_list = []
 
         for h2 in h2_elements:
-            if "competitive landscape" in h2.text.lower():  
+            if "competitive landscape" in h2.get_text(strip=True).replace('\xa0', ' ').lower():  
                 next_div1 = h2.find_next_sibling("div")  
                 if next_div1:
                     first_ul = next_div1.find("ul")  
