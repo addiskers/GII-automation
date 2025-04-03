@@ -454,7 +454,7 @@ def scrape_report(url,driver):
     
     countries_list = [
         "USA", "Canada", "Germany", "Spain", "Italy", "France", "UK", 
-        "China", "India", "Japan", "South Korea", "Brazil", "Mexico"
+        "China", "India", "Japan", "South Korea", "Brazil", "Mexico",
         "GCC Countries", "South Africa"
     ]
     formatted_countries = [f"◦ {country}" for country in countries_list]
