@@ -70,7 +70,9 @@ def extract_bullet_points(ul_element, level=0):
 
 def extract_report_details(soup):
         try:
+            
             description = soup.find("div", class_="report-details-description")
+            print("DEBUG: Description element found:", bool(description))
             first_para = description.find("p").text.strip()
             market_name = first_para.lower().split("market", 1)[0].strip()
             all_paragraphs = description.find_all("p")
@@ -292,10 +294,11 @@ def format_market_title(title):
 
 def scrape_report(url,driver):
     try:
+        print("start")
         driver = driver
         formatted_url = format_url(url)
         driver.get(formatted_url)
-        WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.CLASS_NAME, "tabs-bar")))
+        WebDriverWait(driver, 20).until(EC.presence_of_element_located((By.CLASS_NAME, "tabs-bar")))
         
         page_source1 = driver.page_source
         soup = BeautifulSoup(page_source1, "html.parser")
@@ -304,8 +307,8 @@ def scrape_report(url,driver):
         
         sleep(1)
         driver.execute_script("arguments[0].click();", toc_tab)
-        WebDriverWait(driver, 10).until(EC.visibility_of_element_located((By.ID, "tab_default_3")))
-        WebDriverWait(driver, 10).until(EC.visibility_of_element_located((By.CLASS_NAME, "special-toc-class")))
+        WebDriverWait(driver, 20).until(EC.visibility_of_element_located((By.ID, "tab_default_3")))
+        WebDriverWait(driver, 20).until(EC.visibility_of_element_located((By.CLASS_NAME, "special-toc-class")))
         page_source = driver.page_source
         soup_toc = BeautifulSoup(page_source, "html.parser")
         toc_section = soup_toc.find("div", {"class": "special-toc-class"})
