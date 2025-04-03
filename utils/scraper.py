@@ -70,11 +70,9 @@ def extract_bullet_points(ul_element, level=0):
 
 def extract_report_details(soup):
         try:
-            
             description = soup.find("div", class_="report-details-description")
-            print("DEBUG: Description element found:", bool(description))
             first_para = description.find("p").text.strip()
-            market_name = first_para.lower().split("market", 1)[0].strip()
+            market_name = first_para.lower().split("market", 1)[0].strip().title()
             all_paragraphs = description.find_all("p")
             remaining_paragraphs = [
                 para.text for para in all_paragraphs[1:] 
@@ -198,18 +196,7 @@ def extract_report_details(soup):
 
                     break
                   
-            if not seventh_para:
-                fallback_driver_prompt = f"Write a Key Market Driver for the Global {market_name} Market in one paragraph (100 words only)."
-                seventh_para = AI([], fallback_driver_prompt).strip()
-                print("Fallback Driver Generated:")
-                print(seventh_para)
 
-            if not ninth_para:
-                fallback_restraint_prompt = f"Write a Key Market Restraint for the Global {market_name} Market in one paragraph (100 words only)."
-                ninth_para = AI([], fallback_restraint_prompt).strip()
-                print("Fallback Restraint Generated:")
-                print(ninth_para)
-                       
             eighth_para = f"Restraints in the {market_name} Market".strip()
             tenth_para = f"Market Trends of the {market_name} Market".strip()
             eleven_inst = f"Elaborate it as a market trend for {market_name} market in 100 words in one paragraph "
@@ -223,11 +210,7 @@ def extract_report_details(soup):
 
                         else:
                             print("No <li> found in the div.")
-            if not eleven_para:
-                fallback_trend_prompt = f"Write a Key Market Trend for the Global {market_name} Market in one paragraph (100 words only)."
-                eleven_para = AI([], fallback_trend_prompt).strip()
-                print("Fallback Trend Generated:")
-                print(eleven_para)
+            
 
             description_content = "\n\n".join(
                 [
@@ -294,11 +277,10 @@ def format_market_title(title):
 
 def scrape_report(url,driver):
     try:
-        print("start")
         driver = driver
         formatted_url = format_url(url)
         driver.get(formatted_url)
-        WebDriverWait(driver, 20).until(EC.presence_of_element_located((By.CLASS_NAME, "tabs-bar")))
+        WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.CLASS_NAME, "tabs-bar")))
         
         page_source1 = driver.page_source
         soup = BeautifulSoup(page_source1, "html.parser")
@@ -307,8 +289,8 @@ def scrape_report(url,driver):
         
         sleep(1)
         driver.execute_script("arguments[0].click();", toc_tab)
-        WebDriverWait(driver, 20).until(EC.visibility_of_element_located((By.ID, "tab_default_3")))
-        WebDriverWait(driver, 20).until(EC.visibility_of_element_located((By.CLASS_NAME, "special-toc-class")))
+        WebDriverWait(driver, 10).until(EC.visibility_of_element_located((By.ID, "tab_default_3")))
+        WebDriverWait(driver, 10).until(EC.visibility_of_element_located((By.CLASS_NAME, "special-toc-class")))
         page_source = driver.page_source
         soup_toc = BeautifulSoup(page_source, "html.parser")
         toc_section = soup_toc.find("div", {"class": "special-toc-class"})
@@ -457,7 +439,7 @@ def scrape_report(url,driver):
     
     countries_list = [
         "USA", "Canada", "Germany", "Spain", "Italy", "France", "UK", 
-        "China", "India", "Japan", "South Korea", "Brazil", "Mexico",
+        "China", "India", "Japan", "South Korea", "Brazil", 
         "GCC Countries", "South Africa"
     ]
     formatted_countries = [f"◦ {country}" for country in countries_list]
