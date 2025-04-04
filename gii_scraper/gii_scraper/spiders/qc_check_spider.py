@@ -7,7 +7,7 @@ import re
 class QcCheckSpider(scrapy.Spider):
     name = "qc_check_spider"
     allowed_domains = ["skyquestt.com"]
-
+    
     def __init__(self, links, output_path, *args, **kwargs):
         super(QcCheckSpider, self).__init__(*args, **kwargs)
         self.links = links.split(",")
