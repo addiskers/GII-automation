@@ -74,10 +74,15 @@ def extract_report_details(soup):
             first_para = description.find("p").text.strip()
             market_name = re.split(r'market', first_para, flags=re.IGNORECASE, maxsplit=1)[0].strip()
             all_paragraphs = description.find_all("p")
-            remaining_paragraphs = [
-                para.text for para in all_paragraphs[1:] 
-                if "is poised to grow at a sustainable CAGR for the next forecast year" not in para.text
-            ]
+            remaining_paragraphs = []
+            skip_phrase = "is poised to grow at a sustainable CAGR for the next forecast year"
+
+            for para in all_paragraphs[1:]:
+                if para.find("strong"):
+                    break
+                if skip_phrase in para.get_text():
+                    continue
+                remaining_paragraphs.append(para.get_text())
             remaining_text = "\n".join(remaining_paragraphs)
             remaining_text_instruction = "Rephrase as a market insights in 120 words in one paragraph"
             second_para = AI(remaining_text, remaining_text_instruction).strip()
@@ -379,30 +384,28 @@ def scrape_report(url,driver):
     
    
     try:
-        h2_elements = soup.find_all("h2", class_="report-title")
-        if not h2_elements: 
-                h2_elements = soup.find_all("div", class_="report-title")  
+        h2_elements = soup.find_all("h2")
         companies_list = []
 
         for h2 in h2_elements:
-            if "competitive landscape" in h2.get_text(strip=True).replace('\xa0', ' ').lower():  
-                next_div1 = h2.find_next_sibling("div")  
-                if next_div1:
-                    first_ul = next_div1.find("ul")  
-                    if first_ul:
-                        for li in first_ul.find_all("li"): 
-                            company = li.text.strip()
-                            if company and company != '&nbsp;':  
-                                companies_list.append(f"◦ {company}")
-                    break 
+            header_text = " ".join(h2.stripped_strings).lower()
+            if "top player" in header_text:
+                for sib in h2.find_next_siblings():
+                    if sib.name != "ul":
+                        break
+                    for li in sib.find_all("li"):
+                        text = li.get_text(strip=True)
+                        if text and text != "&nbsp;":
+                            companies_list.append(f"◦ {text}")
+                break  
 
-        cell_companies = "\n".join(companies_list)
-        companies_count = len(companies_list)
-        if not cell_companies or companies_count< 5:
-            cell_companies = "Error"  
+            cell_companies = "\n".join(companies_list) or "Error"
 
     except Exception as e:
-        print(f"Error extracting companies: {str(e)}")
+                print(f"Error extracting companies: {e}")
+
+    print(cell_companies)
+
 
         
     seg = soup.find("td", class_="fw-bold", string="Segments covered")
