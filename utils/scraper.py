@@ -384,10 +384,10 @@ def scrape_report(url,driver):
     
    
     try:
-        h2_elements = soup.find_all("h2")
+        h2_comp = soup.find_all("h2")
         companies_list = []
 
-        for h2 in h2_elements:
+        for h2 in h2_comp:
             header_text = " ".join(h2.stripped_strings).lower()
             if "top player" in header_text:
                 for sib in h2.find_next_siblings():
@@ -399,7 +399,7 @@ def scrape_report(url,driver):
                             companies_list.append(f"◦ {text}")
                 break  
 
-            cell_companies = "\n".join(companies_list) or "Error"
+        cell_companies = "\n".join(companies_list) or "Error"
 
     except Exception as e:
                 print(f"Error extracting companies: {e}")
