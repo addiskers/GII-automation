@@ -225,7 +225,18 @@ def extract_report_details(soup):
                             eleven_para = AI(first_li.get_text(strip=True), eleven_inst).strip()
 
                         else:
-                            print("No <li> found in the div.")
+                            trendspara = soup.find("div", class_="key_market_trends")
+                            if trendspara:
+                                paragraphs = trendspara.find_all("p")
+                                found_strong = False
+                                for p in paragraphs:
+                                    if found_strong and not p.find("strong"):
+                                       eleven_para = AI(p.get_text(strip=True), eleven_inst).strip()                                        
+                                       break
+                                    if p.find("strong"):
+                                        found_strong = True
+                            else:
+                                print("No 'key_market_trends' div found.")
             if not eleven_para:
                 fallback_trend_prompt = f"Write a Key Market Trend for the Global {market_name} Market in one paragraph (100 words only)."
                 eleven_para = AI([], fallback_trend_prompt).strip()
