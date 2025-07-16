@@ -84,7 +84,7 @@ def extract_report_details(soup):
                     continue
                 remaining_paragraphs.append(para.get_text())
             remaining_text = "\n".join(remaining_paragraphs)
-            remaining_text_instruction = "Rephrase as a market insights in 120 words in one paragraph"
+            remaining_text_instruction = f"Rephrase the following content as market insights {market_name} in exactly 120 words in one paragraph without referencing specific dates or timeframes."
             second_para = AI(remaining_text, remaining_text_instruction).strip()
             third_para = f"""
             Top-down and bottom-up approaches were used to estimate and validate the size of the {market_name} market and to estimate the size of various other dependent submarkets. The research methodology used to estimate the market size includes the following details: The key players in the market were identified through secondary research, and their market shares in the respective regions were determined through primary and secondary research. This entire procedure includes the study of the annual and financial reports of the top market players and extensive interviews for key insights from industry leaders such as CEOs, VPs, directors, and marketing executives. All percentage shares split, and breakdowns were determined using secondary sources and verified through Primary sources. All possible parameters that affect the markets covered in this research study have been accounted for, viewed in extensive detail, verified through primary research, and analyzed to get the final quantitative and qualitative data.
@@ -115,8 +115,8 @@ def extract_report_details(soup):
             ninth_para=None
             seventh_para=None
             
-            driver_inst = f"rephrase this market is {market_name} market driver i need 100 words in one paragraph"
-            restraint_inst = f"rephrase this market is {market_name} market restraint i need 100 words in one paragraph"
+            driver_inst = f"rephrase this market is {market_name} market driver i need 100 words in one paragraph  without referencing specific dates or timeframes."
+            restraint_inst = f"rephrase this market is {market_name} market restraint i need 100 words in one paragraph  without referencing specific dates or timeframes."
             for h2 in h2_elements:
                 if "market dynamics" in h2.get_text(strip=True).replace('\xa0', ' ').lower():
                     next_div = h2.find_next_sibling("div")
@@ -202,13 +202,13 @@ def extract_report_details(soup):
                     break
                   
             if not seventh_para:
-                fallback_driver_prompt = f"Write a Key Market Driver for the Global {market_name} Market in one paragraph (100 words only)."
+                fallback_driver_prompt = f"Write a Key Market Driver for the Global {market_name} Market in one paragraph (100 words only). without referencing specific dates or timeframes."
                 seventh_para = AI([], fallback_driver_prompt).strip()
                 print("Fallback Driver Generated:")
                 print(seventh_para)
 
             if not ninth_para:
-                fallback_restraint_prompt = f"Write a Key Market Restraint for the Global {market_name} Market in one paragraph (100 words only)."
+                fallback_restraint_prompt = f"Write a Key Market Restraint for the Global {market_name} Market in one paragraph (100 words only). without referencing specific dates or timeframes."
                 ninth_para = AI([], fallback_restraint_prompt).strip()
                 print("Fallback Restraint Generated:")
                 print(ninth_para)
@@ -238,7 +238,7 @@ def extract_report_details(soup):
                             else:
                                 print("No 'key_market_trends' div found.")
             if not eleven_para:
-                fallback_trend_prompt = f"Write a Key Market Trend for the Global {market_name} Market in one paragraph (100 words only)."
+                fallback_trend_prompt = f"Write a Key Market Trend for the Global {market_name} Market in one paragraph (100 words only). without referencing specific dates or timeframes."
                 eleven_para = AI([], fallback_trend_prompt).strip()
                 print("Fallback Trend Generated:")
                 print(eleven_para)
@@ -305,6 +305,64 @@ def format_market_title(title):
             processed_segments.append(base_segment)
     
     return f"{pre_growth}Growth Analysis, {', '.join(processed_segments)}"
+def format_segments(input_string):
+    if not input_string.strip().startswith("By"):
+        input_string = "By " + input_string
+    
+    if " - " in input_string:
+        input_string = input_string.split(" - ")[0].strip()
+    
+    raw_segments = []
+    parts = input_string.split(", By ")
+    for i, part in enumerate(parts):
+        if i == 0:  
+            raw_segments.append(part)
+        else: 
+            raw_segments.append("By " + part)
+    
+    formatted_segments = []
+    for i, segment in enumerate(raw_segments):
+        segment = segment.strip()
+        
+        if "(" in segment:
+            segment_name = segment.split("(")[0].strip()
+            if segment_name.startswith("By "):
+                segment_name = segment_name[3:].strip()
+            
+            paren_level = 0
+            subsegment_text = ""
+            in_parentheses = False
+            
+            for char in segment:
+                if char == '(':
+                    paren_level += 1
+                    if paren_level == 1:  
+                        in_parentheses = True
+                    else: 
+                        subsegment_text += char
+                elif char == ')':
+                    paren_level -= 1
+                    if paren_level == 0: 
+                        in_parentheses = False
+                    else:  
+                        subsegment_text += char
+                elif in_parentheses:
+                    subsegment_text += char
+            
+            if subsegment_text and i < 2: 
+                subsegments = subsegment_text.split(", ")
+                first_two = ", ".join(subsegments[:2])
+                formatted_segments.append(f"By {segment_name} ({first_two})")
+            else:  
+                formatted_segments.append(f"By {segment_name}")
+        else:
+            segment_name = segment
+            if segment_name.startswith("By "):
+                segment_name = segment_name[3:].strip()
+            formatted_segments.append(f"By {segment_name}")
+    
+    return ", ".join(formatted_segments)
+
 
 def scrape_report(url,driver):
     try:
@@ -356,16 +414,17 @@ def scrape_report(url,driver):
     )
 
     title2 = head_div2.find("h2").text.strip().split("By",1)[1]
-
+    result = format_segments(title2)
 
     head_div1 = soup.find(
         "div", class_="report-main-header"
     )
 
     title1 = head_div1.find("h1").text.strip()
+    title1 = " ".join(head_div1.find("h1").get_text().split())
 
-    titles=title1+", By"+title2
-    title = format_market_title(titles)
+    titles=title1+", "+result
+    title = format_market_title(titles)+" - Industry Forecast 2025-2032"
     print(title)
     if "market name" in title.lower() or "market name," in title.lower():
         title = "Error"
