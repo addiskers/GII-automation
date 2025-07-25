@@ -20,7 +20,7 @@
             flex-direction: column;
             justify-content: center;
             align-items: center;
-            height: 100vh;
+            min-height: 100vh;
             box-sizing: border-box;
         }
         h1 {
@@ -82,6 +82,10 @@
         button:hover {
             background-color: #0097a7;
         }
+        button:disabled {
+            background-color: #555;
+            cursor: not-allowed;
+        }
         a.button-link {
             text-decoration: none;
             background-color: #00bcd4;
@@ -97,6 +101,115 @@
         a.button-link:hover {
             background-color: #0097a7;
         }
+        
+        /* Progress Section */
+        .progress-section {
+            background-color: #1e1e1e;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.5);
+            width: 90%;
+            max-width: 600px;
+            margin-bottom: 20px;
+            display: none;
+        }
+        
+        .progress-bar-container {
+            background-color: #2a2a2a;
+            border-radius: 10px;
+            height: 30px;
+            margin: 20px 0;
+            overflow: hidden;
+        }
+        
+        .progress-bar {
+            background: linear-gradient(90deg, #00bcd4, #0097a7);
+            height: 100%;
+            width: 0%;
+            transition: width 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            font-weight: bold;
+        }
+        
+        .progress-info {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin: 15px 0;
+        }
+        
+        .progress-stat {
+            background-color: #2a2a2a;
+            padding: 10px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        
+        .progress-stat .label {
+            color: #ff9800;
+            font-size: 0.9rem;
+            margin-bottom: 5px;
+        }
+        
+        .progress-stat .value {
+            color: #fff;
+            font-size: 1.2rem;
+            font-weight: bold;
+        }
+        
+        .stop-button {
+            background-color: #d32f2f !important;
+            color: white !important;
+            width: 100%;
+        }
+        
+        .stop-button:hover {
+            background-color: #b71c1c !important;
+        }
+        
+        .current-url {
+            background-color: #2a2a2a;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+            word-break: break-all;
+            font-size: 0.9rem;
+        }
+        
+        .status-message {
+            text-align: center;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+            font-weight: bold;
+        }
+        
+        .status-running {
+            background-color: #1976d2;
+        }
+        
+        .status-completed {
+            background-color: #388e3c;
+        }
+        
+        .status-stopped {
+            background-color: #f57c00;
+        }
+        
+        .download-section {
+            background-color: #1e1e1e;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.5);
+            width: 90%;
+            max-width: 600px;
+            margin-bottom: 20px;
+            display: none;
+        }
+        
         .error-container {
             margin-top: 20px;
             padding: 15px;
@@ -111,23 +224,26 @@
             list-style: none;
             padding: 0;
             margin: 0;
+            max-height: 200px;
+            overflow-y: auto;
         }
         .error-container li {
             margin: 5px 0;
             word-wrap: break-word;
         }
+        
         @media (max-width: 600px) {
             h1 {
                 font-size: 2rem;
             }
-            form {
+            form, .progress-section, .download-section {
                 padding: 20px;
             }
             button {
                 font-size: 1rem;
             }
-            .error-container {
-                width: 100%;
+            .progress-info {
+                grid-template-columns: 1fr;
             }
         }
     </style>
@@ -135,48 +251,313 @@
 <body>
     <h1>GII Report Automation</h1>
 
-    <!-- Unified Form for URL Input -->
-    <form method="POST">
-        <label for="urls">Paste Links (one per line):</label>
-        <textarea id="urls" name="urls" rows="10" placeholder="https://www.skyquestt.com/report/example"></textarea>
-        <div class="button-container">
-            <button formaction="/generate-images" type="submit">Generate Images</button>
-            <button formaction="/generate" type="submit">Generate Excel</button>
-            <a href="/qc" class="button-link">Go to QC</a>
+    <!-- Main Form -->
+    <div id="main-form">
+        <form method="POST" id="url-form">
+            <label for="urls">Paste Links (one per line):</label>
+            <textarea id="urls" name="urls" rows="10" placeholder="https://www.skyquestt.com/report/example"></textarea>
+            <div class="button-container">
+                <button type="button" onclick="startJob('images')">Generate Images</button>
+                <button type="button" onclick="startJob('excel')">Generate Excel</button>
+                <a href="/qc" class="button-link">Go to QC</a>
+            </div>
+        </form>
+    </div>
+
+    <!-- Progress Section -->
+    <div class="progress-section" id="progress-section">
+        <h3 id="progress-title">Processing...</h3>
+        
+        <div class="status-message" id="status-message">
+            Starting job...
         </div>
-    </form>
-
-    <!-- Feedback and Download Links -->
-    {% if image_zip %}
-    <div class="button-container">
-        <a href="/download-images?image_zip={{ image_zip }}" class="button-link">Download Images as Zip</a>
+        
+        <div class="progress-bar-container">
+            <div class="progress-bar" id="progress-bar">0%</div>
+        </div>
+        
+        <div class="progress-info">
+            <div class="progress-stat">
+                <div class="label">Total</div>
+                <div class="value" id="total-count">0</div>
+            </div>
+            <div class="progress-stat">
+                <div class="label">Completed</div>
+                <div class="value" id="completed-count">0</div>
+            </div>
+            <div class="progress-stat">
+                <div class="label">Failed</div>
+                <div class="value" id="failed-count">0</div>
+            </div>
+            <div class="progress-stat">
+                <div class="label">Progress</div>
+                <div class="value" id="percentage">0%</div>
+            </div>
+        </div>
+        
+        <div class="current-url" id="current-url">
+            <strong>Processing:</strong> <span id="current-url-text">Waiting...</span>
+        </div>
+        
+        <button class="stop-button" id="stop-button" onclick="stopJob()">
+            Stop Processing
+        </button>
     </div>
-    {% endif %}
 
-    {% if file_path %}
-    <div class="button-container">
-        <a href="/download?file_path={{ file_path }}" class="button-link">Download Excel File</a>
+    <!-- Download Section -->
+    <div class="download-section" id="download-section">
+        <h3>Download Results</h3>
+        <div class="button-container" id="download-buttons">
+            <!-- Download buttons will be added here -->
+        </div>
     </div>
-    {% endif %}
 
-    <!-- Feedback Messages -->
-{% if message %}
-<div class="feedback-container">
-    <p>{{ message }}</p>
-</div>
-{% endif %}
+    <!-- Error Container -->
+    <div class="error-container" id="error-container" style="display: none;">
+        <p><strong>Failed to process the following URLs:</strong></p>
+        <ul id="failed-urls-list">
+        </ul>
+    </div>
 
-<!-- Display Failed URLs -->
-{% if failed_urls and failed_urls|length > 0 %}
-<div class="error-container">
-    <p><strong>Failed to process the following URLs:</strong></p>
-    <ul>
-        {% for url in failed_urls %}
-        <li>{{ url }}</li>
-        {% endfor %}
-    </ul>
-</div>
-{% endif %}
+    <!-- JavaScript for Progress Tracking -->
+    <script>
+        let currentJobId = null;
+        let progressInterval = null;
+        let isJobRunning = false;
 
+        // Initialize job from server-side data
+        {% if job_id %}
+            currentJobId = "{{ job_id }}";
+            startProgressTracking("{{ task_type }}");
+        {% endif %}
+
+        function startJob(taskType) {
+            const urls = document.getElementById('urls').value.trim();
+            if (!urls) {
+                alert('Please enter at least one URL');
+                return;
+            }
+
+            isJobRunning = true;
+            
+            // Show progress section
+            document.getElementById('main-form').style.display = 'none';
+            document.getElementById('progress-section').style.display = 'block';
+            document.getElementById('download-section').style.display = 'none';
+            document.getElementById('error-container').style.display = 'none';
+            
+            // Update title
+            document.getElementById('progress-title').textContent = 
+                taskType === 'images' ? 'Generating Images...' : 'Generating Excel...';
+
+            // Submit form
+            const form = document.getElementById('url-form');
+            const formData = new FormData(form);
+            
+            const endpoint = taskType === 'images' ? '/generate-images' : '/generate';
+            
+            fetch(endpoint, {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.text())
+            .then(html => {
+                // Extract job ID from response
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(html, 'text/html');
+                const scripts = doc.getElementsByTagName('script');
+                
+                // Find job ID in the response
+                for (let script of scripts) {
+                    const content = script.textContent;
+                    const match = content.match(/currentJobId = "([^"]+)"/);
+                    if (match) {
+                        currentJobId = match[1];
+                        break;
+                    }
+                }
+                
+                if (currentJobId) {
+                    startProgressTracking(taskType);
+                } else {
+                    showError('Failed to start job. Please try again.');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showError('Failed to start job. Please try again.');
+            });
+        }
+
+        function startProgressTracking(taskType) {
+            if (!currentJobId) return;
+
+            updateStatus('Starting job...', 'running');
+            
+            progressInterval = setInterval(() => {
+                fetch(`/progress/${currentJobId}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.error) {
+                            console.error('Progress error:', data.error);
+                            return;
+                        }
+
+                        updateProgress(data);
+
+                        if (data.status === 'completed' || data.status === 'stopped') {
+                            clearInterval(progressInterval);
+                            isJobRunning = false;
+                            
+                            if (data.status === 'completed') {
+                                showDownloadSection(data, taskType);
+                                updateStatus('Job completed successfully!', 'completed');
+                            } else {
+                                updateStatus('Job was stopped by user', 'stopped');
+                                showBackButton();
+                            }
+                            
+                            if (data.failed_urls && data.failed_urls.length > 0) {
+                                showFailedUrls(data.failed_urls);
+                            }
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Progress fetch error:', error);
+                    });
+            }, 2000); // Check every 2 seconds
+        }
+
+        function updateProgress(data) {
+            // Update counts
+            document.getElementById('total-count').textContent = data.total || 0;
+            document.getElementById('completed-count').textContent = data.completed || 0;
+            document.getElementById('failed-count').textContent = data.failed || 0;
+            document.getElementById('percentage').textContent = data.percentage + '%';
+            
+            // Update progress bar
+            const progressBar = document.getElementById('progress-bar');
+            progressBar.style.width = data.percentage + '%';
+            progressBar.textContent = data.percentage + '%';
+            
+            // Update current URL
+            if (data.current_url) {
+                document.getElementById('current-url-text').textContent = data.current_url;
+            }
+            
+            // Update status
+            if (data.status === 'running') {
+                updateStatus(`Processing... (${data.completed}/${data.total})`, 'running');
+            }
+        }
+
+        function updateStatus(message, status) {
+            const statusElement = document.getElementById('status-message');
+            statusElement.textContent = message;
+            statusElement.className = 'status-message status-' + status;
+        }
+
+        function stopJob() {
+            if (!currentJobId || !isJobRunning) return;
+
+            fetch(`/stop/${currentJobId}`, {
+                method: 'POST'
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    updateStatus('Stopping job...', 'stopped');
+                    document.getElementById('stop-button').disabled = true;
+                    document.getElementById('stop-button').textContent = 'Stopping...';
+                } else {
+                    alert('Failed to stop job: ' + (data.error || 'Unknown error'));
+                }
+            })
+            .catch(error => {
+                console.error('Stop job error:', error);
+                alert('Failed to stop job');
+            });
+        }
+
+        function showDownloadSection(data, taskType) {
+            const downloadSection = document.getElementById('download-section');
+            const downloadButtons = document.getElementById('download-buttons');
+            
+            downloadButtons.innerHTML = '';
+            
+            if (taskType === 'excel' && data.file_path) {
+                downloadButtons.innerHTML += 
+                    `<a href="/download?file_path=${encodeURIComponent(data.file_path)}" class="button-link">Download Excel File</a>`;
+            }
+            
+            if (taskType === 'images' && data.image_zip) {
+                downloadButtons.innerHTML += 
+                    `<a href="/download-images?image_zip=${encodeURIComponent(data.image_zip)}" class="button-link">Download Images Zip</a>`;
+            }
+            
+            downloadButtons.innerHTML += 
+                '<button type="button" onclick="resetForm()" style="background-color: #666;">Process More URLs</button>';
+            
+            downloadSection.style.display = 'block';
+        }
+
+        function showFailedUrls(failedUrls) {
+            const errorContainer = document.getElementById('error-container');
+            const failedUrlsList = document.getElementById('failed-urls-list');
+            
+            failedUrlsList.innerHTML = '';
+            failedUrls.forEach(url => {
+                const li = document.createElement('li');
+                li.textContent = url;
+                failedUrlsList.appendChild(li);
+            });
+            
+            errorContainer.style.display = 'block';
+        }
+
+        function showBackButton() {
+            const downloadSection = document.getElementById('download-section');
+            const downloadButtons = document.getElementById('download-buttons');
+            
+            downloadButtons.innerHTML = 
+                '<button type="button" onclick="resetForm()" style="background-color: #666;">Back to Form</button>';
+            
+            downloadSection.style.display = 'block';
+        }
+
+        function resetForm() {
+            // Clear current job
+            currentJobId = null;
+            isJobRunning = false;
+            
+            if (progressInterval) {
+                clearInterval(progressInterval);
+                progressInterval = null;
+            }
+            
+            // Reset form and show main form
+            document.getElementById('main-form').style.display = 'block';
+            document.getElementById('progress-section').style.display = 'none';
+            document.getElementById('download-section').style.display = 'none';
+            document.getElementById('error-container').style.display = 'none';
+            
+            // Reset progress elements
+            document.getElementById('progress-bar').style.width = '0%';
+            document.getElementById('progress-bar').textContent = '0%';
+            document.getElementById('stop-button').disabled = false;
+            document.getElementById('stop-button').textContent = 'Stop Processing';
+        }
+
+        function showError(message) {
+            alert(message);
+            resetForm();
+        }
+
+        // Auto-start progress tracking if job_id is provided
+        if (currentJobId) {
+            document.getElementById('main-form').style.display = 'none';
+            document.getElementById('progress-section').style.display = 'block';
+        }
+    </script>
 </body>
 </html>
