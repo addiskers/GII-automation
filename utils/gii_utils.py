@@ -6,17 +6,26 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from bs4 import BeautifulSoup
+import tempfile
+import threading
 
 def setup_gii_driver():
-        options = webdriver.ChromeOptions()
-        options.add_argument('--no-sandbox')
-        options.add_argument('--headless')
-        options.add_argument('--ignore-certificate-errors')
-        options.add_argument('--disable-dev-shm-usage')
-        options.add_argument('--disable-extensions')
-        options.add_argument('--disable-gpu')
-        driver = webdriver.Chrome(options=options)
-        return driver
+    """Setup driver for GII scraping with unique user data directory"""
+    options = webdriver.ChromeOptions()
+    options.add_argument('--no-sandbox')
+    options.add_argument('--headless')
+    options.add_argument('--ignore-certificate-errors')
+    options.add_argument('--disable-dev-shm-usage')
+    options.add_argument('--disable-extensions')
+    options.add_argument('--disable-gpu')
+    
+    thread_id = threading.current_thread().ident
+    temp_dir = tempfile.gettempdir()
+    user_data_dir = f"{temp_dir}/chrome_gii_{thread_id}_{int(time.time())}"
+    options.add_argument(f'--user-data-dir={user_data_dir}')
+    
+    driver = webdriver.Chrome(options=options)
+    return driver
 
 def scrape_gii_reports():
     url = "https://www.giiresearch.com/publisher/sky/"
