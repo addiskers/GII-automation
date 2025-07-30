@@ -96,7 +96,7 @@ def AI(text, instruct):
 def extract_bullet_points(ul_element, level=0):
     """Extract bullet points with error handling"""
     try:
-        bullet_symbols = ["•", "o", ""]
+        bullet_symbols = ["•", "o", ""]
         bullet_list = []
         for li in ul_element.find_all("li", recursive=False):
             bullet_symbol = bullet_symbols[min(level, len(bullet_symbols) - 1)]
@@ -146,7 +146,25 @@ def extract_report_details(soup):
             if skip_phrase in para.get_text():
                 continue
             remaining_paragraphs.append(para.get_text())
+
+        if not remaining_paragraphs:
+            first_strong_encountered = False
             
+            for para in all_paragraphs[1:]:
+                if para.find("strong"):
+                    if not first_strong_encountered:
+                        first_strong_encountered = True
+                        if skip_phrase not in para.get_text():
+                            remaining_paragraphs.append(para.get_text())
+                        continue
+                    else:
+                        break
+
+                if skip_phrase in para.get_text():
+                    continue
+
+                remaining_paragraphs.append(para.get_text())
+                
         remaining_text = "\n".join(remaining_paragraphs)
         remaining_text_instruction = f"Rephrase the following content as market insights {market_name} in exactly 120 words in one paragraph without referencing specific dates or timeframes."
         
@@ -249,7 +267,7 @@ def extract_report_details(soup):
         eighth_para = f"Restraints in the {market_name} Market".strip()
         tenth_para = f"Market Trends of the {market_name} Market".strip()
         eleven_para = None
-        eleven_inst = f"Elaborate it as a market trend for {market_name} market in 100 words in one paragraph "
+        eleven_inst = f"Elaborate it as a market trend for {market_name} market in 100 words in one paragraph without referencing specific dates or timeframes."
         
         for h2 in h2_elements:
             if "trend" in h2.get_text(strip=True).replace('\xa0', ' ').lower():
