@@ -8,6 +8,12 @@ from selenium.webdriver.support import expected_conditions as EC
 from bs4 import BeautifulSoup
 import tempfile
 import threading
+import signal
+import os
+
+if hasattr(signal, 'SIGCHLD'):
+    signal.signal(signal.SIGCHLD, signal.SIG_IGN)
+
 
 def setup_gii_driver():
     """Setup driver for GII scraping with unique user data directory"""
@@ -18,6 +24,7 @@ def setup_gii_driver():
     options.add_argument('--disable-dev-shm-usage')
     options.add_argument('--disable-extensions')
     options.add_argument('--disable-gpu')
+    options.add_argument('--disable-crashpad')
     
     thread_id = threading.current_thread().ident
     temp_dir = tempfile.gettempdir()
@@ -27,17 +34,17 @@ def setup_gii_driver():
     driver = webdriver.Chrome(options=options)
     return driver
 
+
 def scrape_gii_reports():
     url = "https://www.giiresearch.com/publisher/sky/"
     driver = setup_gii_driver()
-    driver.get(url)
-    
-    WebDriverWait(driver, 15).until(EC.presence_of_element_located((By.ID, "reports-list")))
-    all_data = []
-    previous_page_number = None
+    try:
+        driver.get(url)
+        WebDriverWait(driver, 15).until(EC.presence_of_element_located((By.ID, "reports-list")))
+        all_data = []
+        previous_page_number = None
 
-    while True:
-        try:
+        while True:
             page_data = extract_reports_from_page(driver.page_source)
             all_data.extend(page_data)
             current_page_number = get_current_page_number(driver)
@@ -47,17 +54,20 @@ def scrape_gii_reports():
             if not click_next_page(driver):
                 break
             WebDriverWait(driver, 5).until(EC.presence_of_element_located((By.ID, "reports-list")))
-        except Exception as e:
-            print(f"Error during page navigation: {e}")
-            break
+    finally:
+        try:
+            service = driver.service
+            driver.quit()
+            if hasattr(service, 'process') and service.process:
+                service.process.wait()
+        except Exception:
+            pass
 
-    driver.quit()
-    
     df = pd.DataFrame(all_data).drop_duplicates()
     df.to_excel("scraped_reports.xlsx", index=False)
     print("Selenium scraping complete data to 'scraped_reports.xlsx'.")
     return len(all_data)
-    
+
 
 def extract_reports_from_page(page_source):
     soup = BeautifulSoup(page_source, "html.parser")
@@ -92,8 +102,10 @@ def extract_reports_from_page(page_source):
         })
     return page_data
 
+
 def get_current_page_number(driver):
     return driver.find_element(By.XPATH, "//*[@id='the-pagination']/a[@class='pagination current-page']").text
+
 
 def click_next_page(driver):
     try:
