@@ -496,7 +496,9 @@ def scrape_report(url, driver=None):
                 result = format_segments(title2)
                 title1 = " ".join(head_div1.find("h1").get_text().split())
                 titles = title1 + ", " + result
-                title = format_market_title(titles) + " - Industry Forecast 2025-2032"
+                title = format_market_title(titles) 
+                if "Industry Forecast 2025-2032" not in title:
+                    title = format_market_title(titles)+ " - Industry Forecast 2025-2032"
                 
                 if "market name" in title.lower() or "market name," in title.lower():
                     title = "Error"
