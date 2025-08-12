@@ -1,7 +1,7 @@
 from flask import Flask
+from routes.generate_routes import generate_routes
 from routes.main_routes import main_routes
 from routes.sitemap_routes import sitemap_routes
-from routes.generate_routes import generate_routes
 from routes.qc_routes import qc_routes 
 from utils.image_utils import cleanup_all_image_files
 import os

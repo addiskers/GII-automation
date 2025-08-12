@@ -497,15 +497,17 @@ def scrape_report(url, driver=None):
                 title1 = " ".join(head_div1.find("h1").get_text().split())
                 titles = title1 + ", " + result
                 title = format_market_title(titles) 
-                if "Industry Forecast 2025-2032" not in title:
-                    title = format_market_title(titles)+ " - Industry Forecast 2025-2032"
-                
-                if "market name" in title.lower() or "market name," in title.lower():
+                normalized_title = title.lower().replace("–", "-")
+                if "industry forecast 2025-2032" not in normalized_title:
+                    title += " - Industry Forecast 2025-2032"
+
+                if "market name" in normalized_title or "market name," in normalized_title:
                     title = "Error"
+                print(title)
         except Exception as e:
             print(f"Error extracting title: {str(e)}")
             title = "Error"
-
+        print(f"Title extracted: {title}")
         # Extract basic info
         product_code = "N/A"
         length = "N/A"
