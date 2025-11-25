@@ -470,13 +470,10 @@ def scrape_report(url, driver=None):
                         "• Introduction",
                         "o Objectives of the Study",
                         "• Market Dynamics & Outlook",
-                        "o Market Dynamics",
                         "• Key Company Profiles",
-                        " Company Overview",
-                        " Business Segment Overview",
-                        " Financial Updates",
-                        " Key Developments"
+                      
                     ]
+                    print(f"Extracted TOC Content for URL {url}:\n{toc_content}")
                     if not all(keyword in toc_content for keyword in required_keywords):
                         toc_content = "Error"
         except Exception as e:  
