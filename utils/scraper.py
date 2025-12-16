@@ -495,8 +495,9 @@ def scrape_report(url, driver=None):
                 titles = title1 + ", " + result
                 title = format_market_title(titles) 
                 normalized_title = title.lower().replace("–", "-")
-                if "industry forecast 2025-2032" not in normalized_title:
-                    title += " - Industry Forecast 2025-2032"
+                print(normalized_title)
+                if "industry forecast 2026-2033" not in normalized_title:
+                    title = "Error"
 
                 if "market name" in normalized_title or "market name," in normalized_title:
                     title = "Error"
