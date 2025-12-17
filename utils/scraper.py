@@ -374,9 +374,15 @@ def format_segments(input_string):
         if not input_string.strip().startswith("By"):
             input_string = "By " + input_string
         
-        if " - " in input_string:
-            input_string = input_string.split(" - ")[0].strip()
-        
+        if "- industry forecast" in input_string.lower():
+            parts = input_string.split("- industry forecast")
+            if len(parts) == 1:
+                parts = input_string.split("-industry forecast")
+            if len(parts) == 1:
+                parts = input_string.split(" - industry forecast")
+            if len(parts) == 1:
+                parts = input_string.split(" -industry forecast")
+            input_string = parts[0].strip() 
         raw_segments = []
         parts = input_string.split(", By ")
         for i, part in enumerate(parts):
@@ -491,8 +497,10 @@ def scrape_report(url, driver=None):
             if head_div2 and head_div1:
                 title2 = head_div2.find("h2").text.strip().split("By",1)[1]
                 result = format_segments(title2)
+                print(result)
                 title1 = " ".join(head_div1.find("h1").get_text().split())
                 titles = title1 + ", " + result
+                print(titles)
                 title = format_market_title(titles) 
                 normalized_title = title.lower().replace("–", "-")
                 print(normalized_title)
@@ -501,7 +509,6 @@ def scrape_report(url, driver=None):
 
                 if "market name" in normalized_title or "market name," in normalized_title:
                     title = "Error"
-                print(title)
         except Exception as e:
             print(f"Error extracting title: {str(e)}")
             title = "Error"
