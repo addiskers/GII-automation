@@ -67,8 +67,8 @@ def setup_selenium_driver():
     options.add_experimental_option("prefs", prefs)
     
     driver = webdriver.Chrome(options=options)
-    driver.set_page_load_timeout(30)  
-    driver.implicitly_wait(10)
+    driver.set_page_load_timeout(60)  
+    driver.implicitly_wait(5)
     
     return driver
 
@@ -444,9 +444,19 @@ def scrape_report(url, driver=None):
         
     try:
         formatted_url = format_url(url)
-        driver.get(formatted_url)
+        print(f"Loading URL: {formatted_url}")
         
-        WebDriverWait(driver, 15).until(EC.presence_of_element_located((By.CLASS_NAME, "tabs-bar")))
+        try:
+            driver.get(formatted_url)
+        except TimeoutException:
+            print(f"Page load timeout, but continuing with partial load for {url}")
+        
+        try:
+            WebDriverWait(driver, 30).until(EC.presence_of_element_located((By.CLASS_NAME, "tabs-bar")))
+        except TimeoutException:
+            print(f"tabs-bar element not found within 30s, trying to continue for {url}")
+        
+        time.sleep(2)
         page_source1 = driver.page_source
         soup = BeautifulSoup(page_source1, "html.parser")
         
@@ -457,8 +467,9 @@ def scrape_report(url, driver=None):
             time.sleep(1)
             driver.execute_script("arguments[0].click();", toc_tab)
             
-            WebDriverWait(driver, 10).until(EC.visibility_of_element_located((By.ID, "tab_default_3")))
-            WebDriverWait(driver, 10).until(EC.visibility_of_element_located((By.CLASS_NAME, "special-toc-class")))
+            WebDriverWait(driver, 15).until(EC.visibility_of_element_located((By.ID, "tab_default_3")))
+            time.sleep(1)
+            WebDriverWait(driver, 15).until(EC.visibility_of_element_located((By.CLASS_NAME, "special-toc-class")))
             
             page_source = driver.page_source
             soup_toc = BeautifulSoup(page_source, "html.parser")
@@ -549,9 +560,10 @@ def scrape_report(url, driver=None):
         # Extract companies
         cell_companies = "Error"
         try:
-            h2_comp = soup.find_all("h2")
             companies_list = []
 
+            # Try 1: Look for h2 with "top player"
+            h2_comp = soup.find_all("h2")
             for h2 in h2_comp:
                 header_text = " ".join(h2.stripped_strings).lower()
                 if "top player" in header_text:
@@ -563,6 +575,44 @@ def scrape_report(url, driver=None):
                             if text and text != "&nbsp;":
                                 companies_list.append(f"◦ {text}")
                     break  
+
+            # Try 2: If no companies found, look for h3 with "top player"
+            if not companies_list:
+                h3_comp = soup.find_all("h3")
+                for h3 in h3_comp:
+                    header_text = " ".join(h3.stripped_strings).lower()
+                    if "top player" in header_text:
+                        for sib in h3.find_next_siblings():
+                            if sib.name != "ul":
+                                break
+                            for li in sib.find_all("li"):
+                                text = li.get_text(strip=True)
+                                if text and text != "&nbsp;":
+                                    companies_list.append(f"◦ {text}")
+                        break
+
+            if not companies_list:
+                # Find all p and b tags
+                all_tags = soup.find_all(['p', 'b'])
+                for tag in all_tags:
+                    tag_text = " ".join(tag.stripped_strings).lower()
+                    if "top player" in tag_text :
+                        # Get all following ul siblings until we hit a non-ul element
+                        current = tag.find_next_sibling()
+                        while current:
+                            if current.name == "ul":
+                                for li in current.find_all("li"):
+                                    text = li.get_text(strip=True)
+                                    if text and text != "&nbsp;":
+                                        companies_list.append(f"◦ {text}")
+                                current = current.find_next_sibling()
+                            elif current.name == "p" and current.find("b"):
+                                # Stop if we hit another section header
+                                break
+                            else:
+                                current = current.find_next_sibling()
+                        if companies_list:
+                            break
 
             cell_companies = "\n".join(companies_list) if companies_list else "Error"
         except Exception as e:
