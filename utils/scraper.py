@@ -106,7 +106,7 @@ def extract_bullet_points(ul_element, level=0):
                     text_content = content.strip()
                     if text_content:
                         bullet_text.append(text_content)
-                elif content.name == "strong":
+                elif content.name in ("strong", "b"):
                     bullet_text.append(content.get_text(strip=True))
                 elif content.name == "ul":
                     if bullet_text:
@@ -580,6 +580,7 @@ def scrape_report(url, driver=None):
             if not companies_list:
                 h3_comp = soup.find_all("h3")
                 for h3 in h3_comp:
+                    print(h3)
                     header_text = " ".join(h3.stripped_strings).lower()
                     if "top player" in header_text:
                         for sib in h3.find_next_siblings():
