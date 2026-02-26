@@ -374,15 +374,23 @@ def format_segments(input_string):
         if not input_string.strip().startswith("By"):
             input_string = "By " + input_string
         
+        forecast_suffix = ""
         if "- industry forecast" in input_string.lower():
-            parts = input_string.split("- industry forecast")
-            if len(parts) == 1:
-                parts = input_string.split("-industry forecast")
-            if len(parts) == 1:
-                parts = input_string.split(" - industry forecast")
-            if len(parts) == 1:
-                parts = input_string.split(" -industry forecast")
-            input_string = parts[0].strip() 
+            # Use regex to capture the forecast part case-insensitively
+            match = re.split(r'(-\s*industry forecast.*)', input_string, flags=re.IGNORECASE, maxsplit=1)
+            if len(match) > 1:
+                input_string = match[0].strip()
+                forecast_suffix = " " + match[1].strip()
+            else:
+                parts = input_string.split("- industry forecast")
+                if len(parts) == 1:
+                    parts = input_string.split("-industry forecast")
+                if len(parts) == 1:
+                    parts = input_string.split(" - industry forecast")
+                if len(parts) == 1:
+                    parts = input_string.split(" -industry forecast")
+                forecast_suffix = " - Industry Forecast" + parts[1] if len(parts) > 1 else ""
+                input_string = parts[0].strip()
         raw_segments = []
         parts = input_string.split(", By ")
         for i, part in enumerate(parts):
@@ -432,7 +440,7 @@ def format_segments(input_string):
                     segment_name = segment_name[3:].strip()
                 formatted_segments.append(f"By {segment_name}")
         
-        return ", ".join(formatted_segments)
+        return ", ".join(formatted_segments) + forecast_suffix
     except Exception as e:
         print(f"Error formatting segments: {str(e)}")
         return input_string
@@ -562,56 +570,72 @@ def scrape_report(url, driver=None):
         try:
             companies_list = []
 
+            def extract_companies_from_ul(ul_tag):
+                """Extract company names from a ul element"""
+                found = []
+                if ul_tag:
+                    for li in ul_tag.find_all("li"):
+                        text = li.get_text(strip=True)
+                        if text and text != "&nbsp;" and text != "\xa0":
+                            found.append(f"◦ {text}")
+                return found
+
+            def find_companies_after_tag(tag):
+                """Find companies using find_next (searches entire tree forward, not just siblings)"""
+                found = []
+                # Method 1: find_next("ul") - works regardless of div nesting
+                next_ul = tag.find_next("ul")
+                if next_ul:
+                    found = extract_companies_from_ul(next_ul)
+                
+                # Method 2: Also try sibling-based search (direct ul siblings or ul inside sibling divs)
+                if not found:
+                    search_tag = tag
+                    # If tag is inside a div, also search from parent div
+                    parent_div = tag.find_parent("div")
+                    tags_to_search = [tag]
+                    if parent_div:
+                        tags_to_search.append(parent_div)
+                    
+                    for t in tags_to_search:
+                        for sib in t.find_next_siblings():
+                            if sib.name == "ul":
+                                found = extract_companies_from_ul(sib)
+                                if found:
+                                    break
+                            elif sib.name == "div":
+                                inner_ul = sib.find("ul")
+                                if inner_ul:
+                                    found = extract_companies_from_ul(inner_ul)
+                                    break
+                        if found:
+                            break
+                return found
+
             # Try 1: Look for h2 with "top player"
             h2_comp = soup.find_all("h2")
             for h2 in h2_comp:
                 header_text = " ".join(h2.stripped_strings).lower()
                 if "top player" in header_text:
-                    for sib in h2.find_next_siblings():
-                        if sib.name != "ul":
-                            break
-                        for li in sib.find_all("li"):
-                            text = li.get_text(strip=True)
-                            if text and text != "&nbsp;":
-                                companies_list.append(f"◦ {text}")
+                    companies_list = find_companies_after_tag(h2)
                     break  
 
             # Try 2: If no companies found, look for h3 with "top player"
             if not companies_list:
                 h3_comp = soup.find_all("h3")
                 for h3 in h3_comp:
-                    print(h3)
                     header_text = " ".join(h3.stripped_strings).lower()
                     if "top player" in header_text:
-                        for sib in h3.find_next_siblings():
-                            if sib.name != "ul":
-                                break
-                            for li in sib.find_all("li"):
-                                text = li.get_text(strip=True)
-                                if text and text != "&nbsp;":
-                                    companies_list.append(f"◦ {text}")
+                        companies_list = find_companies_after_tag(h3)
                         break
 
+            # Try 3: Look for p/b tags with "top player"
             if not companies_list:
-                # Find all p and b tags
                 all_tags = soup.find_all(['p', 'b'])
                 for tag in all_tags:
                     tag_text = " ".join(tag.stripped_strings).lower()
-                    if "top player" in tag_text :
-                        # Get all following ul siblings until we hit a non-ul element
-                        current = tag.find_next_sibling()
-                        while current:
-                            if current.name == "ul":
-                                for li in current.find_all("li"):
-                                    text = li.get_text(strip=True)
-                                    if text and text != "&nbsp;":
-                                        companies_list.append(f"◦ {text}")
-                                current = current.find_next_sibling()
-                            elif current.name == "p" and current.find("b"):
-                                # Stop if we hit another section header
-                                break
-                            else:
-                                current = current.find_next_sibling()
+                    if "top player" in tag_text:
+                        companies_list = find_companies_after_tag(tag)
                         if companies_list:
                             break
 
